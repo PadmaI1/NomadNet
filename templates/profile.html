@@ -11,6 +11,26 @@
 
     <hr>
 
+    {% if current_user.is_authenticated and current_user.id != user.id %}
+
+        <form
+            action="{{ url_for('follow_user', username=user.username) }}"
+            method="POST"
+        >
+        {% if is_following %}
+            <button type="submit">
+                Unfollow
+            </button>
+        {% else %}
+            <button type="submit">
+                Follow
+            </button>
+        {% endif %}
+        
+        </form>
+
+    {% endif %}
+
     <h2>{{ user.username }}'s Posts</h2>
 
     {% if posts %}

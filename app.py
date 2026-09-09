@@ -1,5 +1,5 @@
 from flask import Flask, render_template, abort, request, session, flash, redirect, url_for
-from models import db, Country, User, Post, Comment, Like
+from models import db, Country, User, Post, Comment, Like, Follow
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
@@ -148,10 +148,22 @@ def profile(username):
         Post.created_at.desc()
     ).all()
 
+    is_following = False
+
+    if current_user.is_authenticated:
+        existing_follow = Follow.query.filter_by(
+            follower_id=current_user.id,
+            followed_id=user.id
+        ).first()
+
+        if existing_follow:
+            is_following = True
+            
     return render_template(
         "profile.html",
         user=user,
-        posts=posts
+        posts=posts,
+        is_following=is_following
     )
 
 @app.route("/logout")
@@ -350,6 +362,49 @@ def like_post(post_id):
 
     return redirect(
         url_for("post_detail", post_id=post.id)
+    )
+
+@app.route("/user/<username>/follow", methods=["POST"])
+@login_required
+def follow_user(username):
+
+    user = User.query.filter_by(username=username).first()
+
+    if user is None:
+        abort(404)
+
+    if user.id == current_user.id:
+        flash("You cannot follow yourself.")
+        return redirect(
+            url_for("profile", username=user.username)
+        )
+
+    existing_follow = Follow.query.filter_by(
+        follower_id=current_user.id,
+        followed_id=user.id
+    ).first()
+
+    if existing_follow:
+
+        db.session.delete(existing_follow)
+        db.session.commit()
+
+        flash(f"You unfollowed {user.username}.")
+
+    else:
+
+        follow = Follow(
+            follower_id=current_user.id,
+            followed_id=user.id
+        )
+
+        db.session.add(follow)
+        db.session.commit()
+
+        flash(f"You are now following {user.username}.")
+
+    return redirect(
+        url_for("profile", username=user.username)
     )
 
 @app.errorhandler(404)
