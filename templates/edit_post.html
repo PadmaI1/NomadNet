@@ -1,0 +1,63 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>Edit Post</h1>
+
+    <form
+        action="{{ url_for('edit_post', post_id=post.id) }}"
+        method="POST"
+    >
+
+        <div>
+            <label for="content">Your post</label>
+        </div>
+
+        <div>
+            <textarea
+                id="content"
+                name="content"
+                rows="5"
+                cols="50"
+                required
+            >{{ post.content }}</textarea>
+        </div>
+
+        <div>
+            <label for="country_id">Country</label>
+
+            <select
+                id="country_id"
+                name="country_id"
+                required
+            >
+
+                {% for country in countries %}
+
+                    <option
+                        value="{{ country.id }}"
+                        {% if country.id == post.country_id %}selected{% endif %}
+                    >
+                        {{ country.name }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+        </div>
+
+        <button type="submit">
+            Save Changes
+        </button>
+
+    </form>
+
+    <br>
+
+    <a href="{{ url_for('home') }}">
+        Cancel
+    </a>
+
+{% endblock %}
+

@@ -1,0 +1,53 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>{{ country.name }}</h1>
+
+    <p>
+        Country code: {{ country.code }}
+    </p>
+
+    <hr>
+
+    <h2>Traveller Posts</h2>
+
+    {% if posts %}
+
+        {% for post in posts %}
+
+            <article>
+
+                <h3>
+                    {{ post.author.username }}
+                </h3>
+
+                <p>
+                    {{ post.content }}
+                </p>
+
+                <small>
+                    {{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}
+                </small>
+
+            </article>
+
+            <hr>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>
+            No posts about {{ country.name }} yet. Be the first traveller to share something!
+        </p>
+
+    {% endif %}
+
+    <a href="{{ url_for('home') }}">
+        ← Back to Home
+    </a>
+
+{% endblock %}
+

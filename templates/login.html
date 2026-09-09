@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>Login to NomadNet</h1>
+
+    <form method="POST">
+
+        <label>Email</label>
+        <input type="email" name="email">
+
+        <br><br>
+
+        <label>Password</label>
+        <input type="password" name="password">
+
+        <br><br>
+
+        <button type="submit">
+            Login
+        </button>
+
+    </form>
+
+{% endblock %}

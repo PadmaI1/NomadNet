@@ -1,0 +1,170 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>Post</h1>
+
+    <article>
+
+        <h2>
+            <a href="{{ url_for('profile', username=post.author.username) }}">
+                {{ post.author.username }}
+            </a>
+        </h2>
+
+        <p>
+            {{ post.content }}
+        </p>
+
+        <p>
+            <strong>Country:</strong>
+            <a href="{{ url_for('country_page', country_name=post.country.name) }}">
+                {{ post.country.name }}
+            </a>
+        </p>
+
+        <small>
+            {{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}
+        </small>
+
+    </article>
+
+    <hr>
+
+    {% if current_user.is_authenticated and post.user_id == current_user.id %}
+
+        <a href="{{ url_for('edit_post', post_id=post.id) }}">
+            Edit
+        </a>
+
+        <form
+            action="{{ url_for('delete_post', post_id=post.id) }}"
+            method="POST"
+        >
+            <button type="submit">
+                Delete
+            </button>
+        </form>
+
+    {% endif %}
+
+    <br>
+
+    <hr>
+
+    {% if current_user.is_authenticated %}
+
+        <form
+            action="{{ url_for('like_post', post_id=post.id) }}"
+            method="POST"
+        >
+            <button type="submit">
+                Like
+            </button>
+        </form>
+
+    {% else %}
+
+        <p>
+            Please log in to like this post.
+        </p>
+
+    {% endif %}
+
+    <p>
+        ❤️ {{ post.likes|length }} likes
+    </p>
+
+    <hr>
+    <h2>Comments</h2>
+
+    {% if current_user.is_authenticated %}
+
+        <form
+            action="{{ url_for('create_comment', post_id=post.id) }}"
+            method="POST"
+        >
+
+            <div>
+                <label for="content">Add a comment</label>
+            </div>
+
+            <div>
+                <textarea
+                    id="content"
+                    name="content"
+                    rows="4"
+                    cols="50"
+                    placeholder="Write a comment..."
+                    required
+                ></textarea>
+            </div>
+
+            <button type="submit">
+                Comment
+            </button>
+
+        </form>
+
+    {% else %}
+
+        <p>
+            Please log in to comment.
+        </p>
+
+    {% endif %}
+
+    {% if post.comments %}
+
+        {% for comment in post.comments %}
+
+            <article>
+
+                <h4>
+                    <a href="{{ url_for('profile', username=comment.author.username) }}">
+                        {{ comment.author.username }}
+                    </a>
+                </h4>
+
+                <p>
+                    {{ comment.content }}
+                </p>
+
+                <small>
+                    {{ comment.created_at.strftime("%d %B %Y, %I:%M %p") }}
+                </small>
+
+                {% if current_user.is_authenticated and comment.user_id == current_user.id %}
+
+                    <form
+                        action="{{ url_for('delete_comment', comment_id=comment.id) }}"
+                        method="POST"
+                    >
+                        <button type="submit">
+                            Delete
+                        </button>
+                    </form>
+
+                {% endif %}
+
+            </article>
+
+            <hr>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>
+            No comments yet.
+        </p>
+
+    {% endif %}
+
+    <a href="{{ url_for('home') }}">
+        ← Back to Home
+    </a>
+
+{% endblock %}
+

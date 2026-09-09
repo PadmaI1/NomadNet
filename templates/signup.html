@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>Create your NomadNet account</h1>
+
+    <form method="POST">
+
+        <label>Username</label>
+        <input type="text" name="username">
+
+        <br><br>
+
+        <label>Email</label>
+        <input type="email" name="email">
+
+        <br><br>
+
+        <label>Password</label>
+        <input type="password" name="password">
+
+        <br><br>
+
+        <button type="submit">
+            Sign up
+        </button>
+
+    </form>
+
+{% endblock %}

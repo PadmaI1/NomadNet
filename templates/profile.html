@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>{{ user.username }}</h1>
+
+    <p>
+        Member since:
+        {{ user.created_at.strftime("%d %B %Y") }}
+    </p>
+
+    <hr>
+
+    <h2>{{ user.username }}'s Posts</h2>
+
+    {% if posts %}
+
+        {% for post in posts %}
+
+            <article>
+
+                <h3>
+                    <a href="{{ url_for('post_detail', post_id=post.id) }}">
+                        Post
+                    </a>
+                </h3>
+
+                <p>
+                    {{ post.content }}
+                </p>
+
+                <p>
+                    <strong>Country:</strong>
+                    <a href="{{ url_for('country_page', country_name=post.country.name) }}">
+                        {{ post.country.name }}
+                    </a>
+                </p>
+
+                <small>
+                    {{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}
+                </small>
+
+            </article>
+
+            <hr>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>
+            This traveller hasn't posted anything yet.
+        </p>
+
+    {% endif %}
+
+    <a href="{{ url_for('home') }}">
+        ← Back to Home
+    </a>
+
+{% endblock %}
