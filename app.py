@@ -1,5 +1,5 @@
 from flask import Flask, render_template, abort, request, session, flash, redirect, url_for
-from models import db, Country, User, Post, Comment, Like, Follow
+from models import db, Country, User, Post, Comment, Like, Follow, Location
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
@@ -30,9 +30,37 @@ login_manager.login_view = "login"
 def home():
 
     countries = Country.query.all()
-    posts = Post.query.order_by(Post.created_at.desc()).all()
-    
-    return render_template("home.html", countries=countries, posts=posts)
+    locations = Location.query.all()
+
+    if current_user.is_authenticated:
+
+        following = Follow.query.filter_by(
+            follower_id=current_user.id
+        ).all()
+
+        user_ids = [current_user.id]
+
+        for follow in following:
+            user_ids.append(follow.followed_id)
+
+        posts = Post.query.filter(
+            Post.user_id.in_(user_ids)
+        ).order_by(
+            Post.created_at.desc()
+        ).all()
+
+    else:
+
+        posts = Post.query.order_by(
+            Post.created_at.desc()
+        ).all()
+
+    return render_template(
+        "home.html",
+        countries=countries,
+        locations=locations,
+        posts=posts
+    )
 
 
 @app.route("/about")
@@ -58,6 +86,28 @@ def country_page(country_name):
     return render_template(
         "country.html",
         country=country,
+        posts=posts
+    )
+
+@app.route("/location/<location_name>")
+def location_page(location_name):
+
+    location = Location.query.filter_by(
+        name=location_name
+    ).first()
+
+    if location is None:
+        abort(404)
+
+    posts = Post.query.filter_by(
+        location_id=location.id
+    ).order_by(
+        Post.created_at.desc()
+    ).all()
+
+    return render_template(
+        "location.html",
+        location=location,
         posts=posts
     )
 
@@ -179,22 +229,22 @@ def logout():
 def create_post():
 
     content = request.form["content"]
-    country_id = request.form["country_id"]
+    location_id = request.form["location_id"]
 
     if not content.strip():
         flash("Post cannot be empty.")
         return redirect(url_for("home"))
 
-    country = Country.query.get(country_id)
+    location = Location.query.get(location_id)
 
-    if not country:
-        flash("Invalid country.")
+    if not location:
+        flash("Invalid location.")
         return redirect(url_for("home"))
 
     post = Post(
         content=content,
         user_id=current_user.id,
-        country_id=country_id
+        location_id=location.id
     )
 
     db.session.add(post)

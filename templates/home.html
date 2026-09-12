@@ -9,6 +9,26 @@
         Explore what travellers are saying around the world.
     </p>
 
+    <h2>Explore locations</h2>
+
+    <ul>
+
+        {% for location in locations %}
+
+            <li>
+                <a href="{{ url_for('location_page', location_name=location.name) }}">
+                    {{ location.name }}
+                </a>
+
+                <span>
+                    — {{ location.city }}, {{ location.country }}
+                </span>
+            </li>
+
+        {% endfor %}
+
+    </ul>
+
 
     {% if current_user.is_authenticated %}
 
@@ -31,17 +51,18 @@
                 ></textarea>
             </div>
 
+
             <div>
-                <label for="country_id">Country</label>
+                <label for="location_id">Location</label>
 
-                <select id="country_id" name="country_id" required>
+                <select id="location_id" name="location_id" required>
 
-                    <option value="">Select a country</option>
+                    <option value="">Select a location</option>
 
-                    {% for country in countries %}
+                    {% for location in locations %}
 
-                        <option value="{{ country.id }}">
-                            {{ country.name }}
+                        <option value="{{ location.id }}">
+                            {{ location.name }}, {{ location.country }}
                         </option>
 
                     {% endfor %}
@@ -81,8 +102,15 @@
                 </p>
 
                 <p>
-                    <strong>Country:</strong>
-                    {{ post.country.name }}
+                    <strong>Location:</strong>
+                    <a href="{{ url_for('location_page', location_name=post.location.name) }}">
+                        {{ post.location.name }}
+                    </a>
+                </p>
+
+                <p>
+                    <strong>Location:</strong>
+                    {{ post.location.name }}
                 </p>
 
                 <small>

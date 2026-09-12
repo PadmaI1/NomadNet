@@ -60,8 +60,15 @@ class Post(db.Model):
     nullable=False
     )
 
+    location_id = db.Column(
+        db.Integer,
+        db.ForeignKey("location.id"),
+        nullable=True
+    )
+
     comments = db.relationship("Comment", backref="post", lazy=True)
     likes = db.relationship("Like",backref="post",lazy=True)
+    location = db.relationship("Location",backref="posts",lazy=True)
 
 class Country(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -69,6 +76,42 @@ class Country(db.Model):
     code = db.Column(db.String(10), nullable=False)
 
     posts = db.relationship("Post", backref="country", lazy=True)
+
+class Location(db.Model):
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    name = db.Column(
+        db.String(150),
+        nullable=False
+    )
+
+    type = db.Column(
+        db.String(50),
+        nullable=False
+    )
+
+    country = db.Column(
+        db.String(100),
+        nullable=False
+    )
+
+    city = db.Column(
+        db.String(100),
+        nullable=True
+    )
+
+    latitude = db.Column(
+        db.Float,
+        nullable=False
+    )
+
+    longitude = db.Column(
+        db.Float,
+        nullable=False
+    )
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
