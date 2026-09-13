@@ -9,6 +9,22 @@
         Explore what travellers are saying around the world.
     </p>
 
+    <h2>Explore NomadNet</h2>
+
+    <form method="GET" action="{{ url_for('search_locations') }}">
+
+        <input
+            type="text"
+            name="q"
+            placeholder="Search for a location"
+        >
+
+        <button type="submit">
+            Search
+        </button>
+
+    </form>
+
     <h2>Explore locations</h2>
 
     <ul>
@@ -16,7 +32,7 @@
         {% for location in locations %}
 
             <li>
-                <a href="{{ url_for('location_page', location_name=location.name) }}">
+                <a href="{{ url_for('location_page', location_id=location.id) }}">
                     {{ location.name }}
                 </a>
 
@@ -103,7 +119,7 @@
 
                 <p>
                     <strong>Location:</strong>
-                    <a href="{{ url_for('location_page', location_name=post.location.name) }}">
+                    <a href="{{ url_for('location_page', location_id=post.location.id) }}">
                         {{ post.location.name }}
                     </a>
                 </p>

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>Search Locations</h1>
+
+    <form method="GET" action="{{ url_for('search_locations') }}">
+
+        <input
+            type="text"
+            name="q"
+            placeholder="Search for a location"
+            value="{{ query or '' }}"
+        >
+
+        <button type="submit">
+            Search
+        </button>
+
+    </form>
+
+    <hr>
+
+    {% if query %}
+
+        <h2>Results for "{{ query }}"</h2>
+
+        {% if locations %}
+
+            <ul>
+
+                {% for location in locations %}
+
+                    <li>
+
+                        <a href="{{ url_for('location_page', location_id=location.id) }}">
+                            {{ location.name }}
+                        </a>
+
+                        — {{ location.city }}, {{ location.country }}
+
+                    </li>
+
+                {% endfor %}
+
+            </ul>
+
+        {% else %}
+
+            <p>
+                No locations found.
+            </p>
+
+        {% endif %}
+
+    {% endif %}
+
+{% endblock %}

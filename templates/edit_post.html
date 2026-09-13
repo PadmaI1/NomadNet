@@ -25,21 +25,19 @@
         </div>
 
         <div>
-            <label for="country_id">Country</label>
+            <label for="location_id">Location</label>
 
-            <select
-                id="country_id"
-                name="country_id"
-                required
-            >
+            <select id="location_id" name="location_id" required>
 
-                {% for country in countries %}
+                <option value="">Select a location</option>
+
+                {% for location in locations %}
 
                     <option
-                        value="{{ country.id }}"
-                        {% if country.id == post.country_id %}selected{% endif %}
+                        value="{{ location.id }}"
+                        {% if location.id == post.location_id %}selected{% endif %}
                     >
-                        {{ country.name }}
+                        {{ location.name }} — {{ location.city }}, {{ location.country }}
                     </option>
 
                 {% endfor %}

@@ -54,12 +54,6 @@ class Post(db.Model):
         nullable=False
     )
 
-    country_id = db.Column(
-    db.Integer,
-    db.ForeignKey("country.id"),
-    nullable=False
-    )
-
     location_id = db.Column(
         db.Integer,
         db.ForeignKey("location.id"),
@@ -75,7 +69,6 @@ class Country(db.Model):
     name = db.Column(db.String(100), nullable=False)
     code = db.Column(db.String(10), nullable=False)
 
-    posts = db.relationship("Post", backref="country", lazy=True)
 
 class Location(db.Model):
     id = db.Column(

@@ -67,34 +67,12 @@ def home():
 def about():
     return render_template("about.html")
 
-@app.route("/country/<country_name>")
-def country_page(country_name):
 
-    country = Country.query.filter_by(
-        name=country_name
-    ).first()
 
-    if country is None:
-        abort(404)
+@app.route("/location/<int:location_id>")
+def location_page(location_id):
 
-    posts = Post.query.filter_by(
-        country_id=country.id
-    ).order_by(
-        Post.created_at.desc()
-    ).all()
-
-    return render_template(
-        "country.html",
-        country=country,
-        posts=posts
-    )
-
-@app.route("/location/<location_name>")
-def location_page(location_name):
-
-    location = Location.query.filter_by(
-        name=location_name
-    ).first()
+    location = Location.query.get(location_id)
 
     if location is None:
         abort(404)
@@ -288,20 +266,20 @@ def edit_post(post_id):
     if request.method == "POST":
 
         content = request.form["content"]
-        country_id = request.form["country_id"]
+        location_id = request.form["location_id"]
 
         if not content.strip():
             flash("Post cannot be empty.")
             return redirect(url_for("edit_post", post_id=post.id))
 
-        country = Country.query.get(country_id)
+        location = Location.query.get(location_id)
 
-        if country is None:
-            flash("Invalid country selected.")
+        if location is None:
+            flash("Invalid location selected.")
             return redirect(url_for("edit_post", post_id=post.id))
 
         post.content = content.strip()
-        post.country_id = country.id
+        post.location_id = location.id
 
         db.session.commit()
 
@@ -312,7 +290,7 @@ def edit_post(post_id):
     return render_template(
         "edit_post.html",
         post=post,
-        countries=Country.query.all()
+        locations=Location.query.all()
     )
 
 @app.route("/posts/<int:post_id>")
@@ -455,6 +433,35 @@ def follow_user(username):
 
     return redirect(
         url_for("profile", username=user.username)
+    )
+
+@app.route("/locations/search")
+def search_locations():
+
+    query = request.args.get("q", "").strip()
+
+    if not query:
+        return render_template(
+            "search_locations.html",
+            locations=[],
+            query=""
+        )
+
+    locations = Location.query.filter(
+        Location.name.ilike(f"%{query}%")
+    ).all()
+
+    if locations:
+        return render_template(
+            "search_locations.html",
+            locations=locations,
+            query=query
+        )
+
+    return render_template(
+        "search_locations.html",
+        locations=[],
+        query=query
     )
 
 @app.errorhandler(404)
