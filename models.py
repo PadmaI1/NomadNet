@@ -106,6 +106,9 @@ class Location(db.Model):
         nullable=False
     )
 
+    provider = db.Column(db.String(50), nullable=True)
+    provider_id = db.Column(db.String(100), nullable=True)
+
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 

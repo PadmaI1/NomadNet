@@ -2,57 +2,65 @@
 
 {% block content %}
 
-    <h1>Search Locations</h1>
+<h1>Search locations</h1>
 
-    <form method="GET" action="{{ url_for('search_locations') }}">
+<form method="GET" action="{{ url_for('search_locations') }}">
+    <input
+        type="text"
+        name="q"
+        value="{{ query }}"
+        placeholder="Search for a location"
+    >
 
-        <input
-            type="text"
-            name="q"
-            placeholder="Search for a location"
-            value="{{ query or '' }}"
-        >
+    <button type="submit">Search</button>
+</form>
 
-        <button type="submit">
-            Search
-        </button>
 
-    </form>
+{% if locations %}
+    <h2>Locations already on NomadNet</h2>
 
-    <hr>
+    {% for location in locations %}
+        <div>
+            <strong>{{ location.name }}</strong>
+            <p>{{ location.city }}, {{ location.country }}</p>
+            <p>{{ location.type }}</p>
 
-    {% if query %}
+            <a href="{{ url_for('location_page', location_id=location.id) }}">
+                View location
+            </a>
+        </div>
+        <hr>
+    {% endfor %}
+{% endif %}
 
-        <h2>Results for "{{ query }}"</h2>
 
-        {% if locations %}
+{% if api_locations %}
+    <h2>Places found online</h2>
 
-            <ul>
+    {% for location in api_locations %}
+        <div>
+            <strong>{{ location.name }}</strong>
 
-                {% for location in locations %}
+            <p>{{ location.display_name }}</p>
 
-                    <li>
+            <p>{{ location.type }}</p>
 
-                        <a href="{{ url_for('location_page', location_id=location.id) }}">
-                            {{ location.name }}
-                        </a>
+            <form method="POST" action="{{ url_for('create_location') }}">
+                <input type="hidden" name="name" value="{{ location.name }}">
+                <input type="hidden" name="type" value="{{ location.type }}">
+                <input type="hidden" name="country" value="{{ location.country }}">
+                <input type="hidden" name="city" value="{{ location.city }}">
+                <input type="hidden" name="latitude" value="{{ location.latitude }}">
+                <input type="hidden" name="longitude" value="{{ location.longitude }}">
+                <input type="hidden" name="provider" value="{{ location.provider }}">
+                <input type="hidden" name="provider_id" value="{{ location.provider_id }}">
 
-                        — {{ location.city }}, {{ location.country }}
+                <button type="submit">Use this location</button>
+            </form>
+        </div>
 
-                    </li>
-
-                {% endfor %}
-
-            </ul>
-
-        {% else %}
-
-            <p>
-                No locations found.
-            </p>
-
-        {% endif %}
-
-    {% endif %}
+        <hr>
+    {% endfor %}
+{% endif %}
 
 {% endblock %}

@@ -6,6 +6,7 @@ from flask_login import LoginManager, login_user, current_user, logout_user, log
 from flask_migrate import Migrate
 import os
 from dotenv import load_dotenv
+import requests
 
 app = Flask(__name__)
 
@@ -444,26 +445,108 @@ def search_locations():
         return render_template(
             "search_locations.html",
             locations=[],
+            api_locations=[],
             query=""
         )
 
+    # 1. Search locations already known to NomadNet
     locations = Location.query.filter(
         Location.name.ilike(f"%{query}%")
     ).all()
 
-    if locations:
-        return render_template(
-            "search_locations.html",
-            locations=locations,
-            query=query
+    # 2. Nothing found locally → ask Nominatim
+    response = requests.get(
+        "https://nominatim.openstreetmap.org/search",
+        params={
+            "q": query,
+            "format": "json",
+            "limit": 5,
+            "addressdetails": 1,
+            "accept-language": "en"
+        },
+        headers={
+            "User-Agent": "NomadNet/1.0"
+        },
+        timeout=10
+    )
+
+    data = response.json()
+
+    api_locations = []
+
+    for result in data:
+
+        city = (
+            result["address"].get("city")
+            or result["address"].get("town")
+            or result["address"].get("village")
+            or result["address"].get("municipality")
         )
+
+        location_data = {
+            "name": result.get("name"),
+            "type": result.get("addresstype"),
+            "country": result["address"].get("country"),
+            "city": city,
+            "latitude": float(result["lat"]),
+            "longitude": float(result["lon"]),
+            "place_id": result.get("place_id"),
+            "provider": "openstreetmap",
+            "provider_id": str(result["place_id"])
+        }
+
+        api_locations.append(location_data)
 
     return render_template(
         "search_locations.html",
-        locations=[],
+        locations=locations,
+        api_locations=api_locations,
         query=query
     )
 
+
+@app.route("/locations/create", methods=["POST"])
+@login_required
+def create_location():
+    name = request.form["name"]
+    location_type = request.form["type"]
+    country = request.form["country"]
+    city = request.form["city"]
+    latitude = float(request.form["latitude"])
+    longitude = float(request.form["longitude"])
+    provider = request.form["provider"]
+    provider_id = request.form["provider_id"]
+
+    # Check whether this exact external location
+    # already exists in NomadNet
+    location = Location.query.filter_by(
+        provider=provider,
+        provider_id=provider_id
+    ).first()
+
+    if location:
+        return redirect(
+            url_for("location_page", location_id=location.id)
+        )
+
+    # Location doesn't exist, so create it
+    location = Location(
+        name=name,
+        type=location_type,
+        country=country,
+        city=city,
+        latitude=latitude,
+        longitude=longitude,
+        provider=provider,
+        provider_id=provider_id
+    )
+
+    db.session.add(location)
+    db.session.commit()
+
+    return redirect(
+        url_for("location_page", location_id=location.id)
+    )
 @app.errorhandler(404)
 def pagenotfound(error):
     return render_template("404.html"), 404

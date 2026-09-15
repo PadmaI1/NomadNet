@@ -163,21 +163,5 @@
     {% endif %}
 
 
-    <h2>Popular destinations</h2>
-
-    <ul>
-
-        {% for country in countries %}
-
-            <li>
-                <a href="{{ url_for('country_page', country_name=country.name) }}">
-                    {{ country.name }}
-                </a>
-            </li>
-
-        {% endfor %}
-
-    </ul>
-
 {% endblock %}
 
