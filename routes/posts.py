@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, abort, request, flash, redirect, url_for
+from flask import Blueprint, render_template, abort, request, flash, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 
 from models import db, Post, Comment, Like, Location
@@ -172,9 +172,22 @@ def post_detail(post_id):
     if post is None:
         abort(404)
 
+    is_liked = False
+
+    if current_user.is_authenticated:
+
+        existing_like = Like.query.filter_by(
+            user_id=current_user.id,
+            post_id=post.id
+        ).first()
+
+        if existing_like:
+            is_liked = True
+
     return render_template(
         "posts/post_details.html",
-        post=post
+        post=post,
+        is_liked=is_liked
     )
 
 
@@ -252,9 +265,7 @@ def like_post(post_id):
     if existing_like:
 
         db.session.delete(existing_like)
-        db.session.commit()
-
-        flash("Post unliked.")
+        liked = False
 
     else:
 
@@ -264,10 +275,15 @@ def like_post(post_id):
         )
 
         db.session.add(like)
-        db.session.commit()
+        liked = True
 
-        flash("Post liked.")
+    db.session.commit()
 
-    return redirect(
-        url_for("posts.post_detail", post_id=post.id)
-    )
+    like_count = Like.query.filter_by(
+        post_id=post.id
+    ).count()
+
+    return jsonify({
+        "liked": liked,
+        "like_count": like_count
+    })
