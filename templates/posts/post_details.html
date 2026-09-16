@@ -53,14 +53,16 @@
 
     {% if current_user.is_authenticated %}
 
-        <form
-            action="{{ url_for('posts.like_post', post_id=post.id) }}"
-            method="POST"
+        <button
+            type="button"
+            id="like_button"
         >
-            <button type="submit">
-                Like
-            </button>
-        </form>
+        {% if is_liked %}
+            Unlike
+        {% else %}
+            Like
+        {% endif %}
+        </button>
 
     {% else %}
 
@@ -71,7 +73,7 @@
     {% endif %}
 
     <p>
-        ❤️ {{ post.likes|length }} likes
+        ❤️ <span id="like_count">{{ post.likes|length }}</span> likes
     </p>
 
     <hr>
@@ -163,6 +165,58 @@
     <a href="{{ url_for('locations.home') }}">
         ← Back to Home
     </a>
+
+
+<script>
+
+    const likeButton = document.getElementById("like_button");
+    const likeCount = document.getElementById("like_count");
+
+    if (likeButton) {
+
+        likeButton.addEventListener("click", async function () {
+
+            likeButton.disabled = true;
+
+            try {
+
+                const response = await fetch(
+                    "{{ url_for('posts.like_post', post_id=post.id) }}",
+                    {
+                        method: "POST"
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Request failed");
+                }
+
+                const data = await response.json();
+
+                likeCount.textContent = data.like_count;
+
+                if (data.liked) {
+                    likeButton.textContent = "Unlike";
+                } else {
+                    likeButton.textContent = "Like";
+                }
+
+            } catch (error) {
+
+                alert("Something went wrong. Please try again.");
+
+            } finally {
+
+                likeButton.disabled = false;
+
+            }
+
+        });
+
+    }
+
+</script>
+
 
 {% endblock %}
 
