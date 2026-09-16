@@ -25,6 +25,14 @@
 
     </form>
 
+    <button type="button" id="near_me_button">
+    📍 Near Me
+    </button>
+
+    <p id="near_me_status"></p>
+
+    <div id="nearby_locations"></div>
+
     <h2>Explore locations</h2>
 
     <ul>
@@ -290,6 +298,118 @@
         });
 
     });
+
+const nearMeButton =
+    document.querySelector("#near_me_button");
+
+const nearMeStatus =
+    document.querySelector("#near_me_status");
+
+const nearbyLocations =
+    document.querySelector("#nearby_locations");
+
+
+nearMeButton.addEventListener("click", function() {
+
+    nearMeStatus.textContent =
+        "Getting your location...";
+
+    navigator.geolocation.getCurrentPosition(
+
+        async function(position) {
+
+            const latitude =
+                position.coords.latitude;
+
+            const longitude =
+                position.coords.longitude;
+
+            nearMeStatus.textContent =
+                "Finding locations near you...";
+
+            const response = await fetch(
+                `/api/locations/nearby?latitude=${latitude}&longitude=${longitude}`
+            );
+
+            const data = await response.json();
+
+            nearbyLocations.innerHTML = "";
+
+            if (data.locations.length === 0) {
+
+                nearbyLocations.textContent =
+                    "No locations found nearby.";
+
+                return;
+            }
+
+            data.locations.forEach(function(location) {
+
+                const container =
+                    document.createElement("div");
+
+                const name =
+                    document.createElement("strong");
+
+                name.textContent =
+                    location.name;
+
+                const info =
+                    document.createElement("span");
+
+                info.textContent =
+                    ` — ${location.distance} km away — ${location.post_count} posts `;
+
+                container.appendChild(name);
+
+                container.appendChild(info);
+
+
+                if (location.post_count > 0) {
+
+                    const link =
+                        document.createElement("a");
+
+                    link.href =
+                        `/location/${location.id}`;
+
+                    link.textContent =
+                        "Explore posts →";
+
+                    container.appendChild(link);
+
+                } else {
+
+                    const emptyMessage =
+                        document.createElement("span");
+
+                    emptyMessage.textContent =
+                        " No posts yet.";
+
+                    container.appendChild(emptyMessage);
+
+                }
+
+
+                nearbyLocations.appendChild(container);
+
+            });
+
+            nearMeStatus.textContent =
+                "Locations near you:";
+
+        },
+
+        function(error) {
+
+            nearMeStatus.textContent =
+                "Could not get your location.";
+
+        }
+
+    );
+
+});
 
 </script>
 
