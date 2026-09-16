@@ -1,4 +1,4 @@
-from flask import Flask, render_template, abort, request, session, flash, redirect, url_for
+from flask import Flask, render_template, abort, request, session, flash, redirect, url_for, jsonify
 from models import db, Country, User, Post, Comment, Like, Follow, Location
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
@@ -203,12 +203,71 @@ def logout():
     flash("Logged out successfully!")
     return redirect(url_for("home"))
 
+'''
+USER
+  │
+  │ types "Kyoto"
+  ↓
+JavaScript
+  │
+  │ input event
+  ↓
+Read "Kyoto"
+  │
+  │ fetch()
+  ↓
+Flask
+  │
+  ├── Search NomadNet DB
+  │
+  └── Search Nominatim
+  │
+  ↓
+JSON
+  │
+  ↓
+JavaScript
+  │
+  │ forEach()
+  ↓
+Create buttons
+  │
+  ↓
+USER
+  │
+  │ clicks "Kyoto, Japan"
+  ↓
+JavaScript
+  │
+  ├── hidden location_id = 7
+  ├── show "Selected: Kyoto"
+  └── clear results
+  │
+  ↓
+USER clicks "Post"
+  │
+  ↓
+HTML form submits
+  │
+  ↓
+Flask /posts/create
+  │
+  ↓
+Post(location_id=7)
+  │
+  ↓
+DATABASE
+'''
 @app.route("/posts/create", methods=["POST"])
 @login_required
 def create_post():
 
     content = request.form["content"]
-    location_id = request.form["location_id"]
+    location_id = request.form.get("location_id")
+
+    if not location_id:
+        flash("Please select a location.")
+        return redirect(url_for("home"))
 
     if not content.strip():
         flash("Post cannot be empty.")
@@ -492,7 +551,8 @@ def search_locations():
             "longitude": float(result["lon"]),
             "place_id": result.get("place_id"),
             "provider": "openstreetmap",
-            "provider_id": str(result["place_id"])
+            "provider_id": str(result["place_id"]),
+            "display_name": result.get("display_name")
         }
 
         api_locations.append(location_data)
@@ -547,6 +607,138 @@ def create_location():
     return redirect(
         url_for("location_page", location_id=location.id)
     )
+
+@app.route("/api/locations/search")
+@login_required
+def api_search_locations():
+
+    query = request.args.get("q", "").strip()
+
+    if len(query) < 2:
+        return jsonify({
+            "locations": [],
+            "api_locations": []
+        })
+
+    locations = Location.query.filter(
+        Location.name.ilike(f"%{query}%")
+    ).all()
+
+    local_locations = []
+
+    for location in locations:
+        local_locations.append({
+            "id": location.id,
+            "name": location.name,
+            "type": location.type,
+            "country": location.country,
+            "city": location.city
+        })
+
+    response = requests.get(
+        "https://nominatim.openstreetmap.org/search",
+        params={
+            "q": query,
+            "format": "json",
+            "limit": 5,
+            "addressdetails": 1,
+            "accept-language": "en"
+        },
+        headers={
+            "User-Agent": "NomadNet/1.0"
+        },
+        timeout=10
+    )
+
+    data = response.json()
+
+    api_locations = []
+
+    for result in data:
+
+        city = (
+            result["address"].get("city")
+            or result["address"].get("town")
+            or result["address"].get("village")
+            or result["address"].get("municipality")
+        )
+
+        provider_id = str(result["place_id"])
+
+        existing_location = Location.query.filter_by(
+            provider="openstreetmap",
+            provider_id=provider_id
+        ).first()
+
+        api_locations.append({
+            "name": result.get("name"),
+            "type": result.get("addresstype"),
+            "country": result["address"].get("country"),
+            "city": city,
+            "latitude": float(result["lat"]),
+            "longitude": float(result["lon"]),
+            "provider": "openstreetmap",
+            "provider_id": provider_id,
+            "display_name": result.get("display_name"),
+            "existing_id": existing_location.id if existing_location else None
+        })
+
+    return jsonify({
+        "locations": local_locations,
+        "api_locations": api_locations
+    })
+
+@app.route("/api/locations/create", methods=["POST"])
+@login_required
+def api_create_location():
+
+    location_data = request.get_json()
+
+    name = location_data["name"]
+    location_type = location_data["type"]
+    country = location_data["country"]
+    city = location_data["city"]
+    latitude = location_data["latitude"]
+    longitude = location_data["longitude"]
+    provider = location_data["provider"]
+    provider_id = location_data["provider_id"]
+
+    location = Location.query.filter_by(
+        provider=provider,
+        provider_id=provider_id
+    ).first()
+
+    if location:
+        return jsonify({
+            "id": location.id,
+            "name": location.name,
+            "country": location.country,
+            "city": location.city
+        })
+
+    location = Location(
+        name=name,
+        type=location_type,
+        country=country,
+        city=city,
+        latitude=latitude,
+        longitude=longitude,
+        provider=provider,
+        provider_id=provider_id
+    )
+
+    db.session.add(location)
+    db.session.commit()
+
+    return jsonify({
+        "id": location.id,
+        "name": location.name,
+        "country": location.country,
+        "city": location.city
+    })
+
+
+
 @app.errorhandler(404)
 def pagenotfound(error):
     return render_template("404.html"), 404

@@ -1,14 +1,10 @@
-
 {% extends "base.html" %}
 
 {% block content %}
 
     <h1>Edit Post</h1>
 
-    <form
-        action="{{ url_for('edit_post', post_id=post.id) }}"
-        method="POST"
-    >
+    <form method="POST">
 
         <div>
             <label for="content">Your post</label>
@@ -24,38 +20,191 @@
             >{{ post.content }}</textarea>
         </div>
 
+
         <div>
-            <label for="location_id">Location</label>
 
-            <select id="location_id" name="location_id" required>
+            <label for="location_search">Location</label>
 
-                <option value="">Select a location</option>
+            <input
+                type="text"
+                id="location_search"
+                value="{{ post.location.name }}"
+                autocomplete="off"
+            >
 
-                {% for location in locations %}
+            <input
+                type="hidden"
+                id="location_id"
+                name="location_id"
+                value="{{ post.location.id }}"
+            >
 
-                    <option
-                        value="{{ location.id }}"
-                        {% if location.id == post.location_id %}selected{% endif %}
-                    >
-                        {{ location.name }} — {{ location.city }}, {{ location.country }}
-                    </option>
+            <div id="location_results"></div>
 
-                {% endfor %}
+            <p id="selected_location">
+                Selected: {{ post.location.name }}, {{ post.location.country }}
+            </p>
 
-            </select>
         </div>
 
+
         <button type="submit">
-            Save Changes
+            Update Post
         </button>
 
     </form>
 
-    <br>
+    <script>
 
-    <a href="{{ url_for('home') }}">
-        Cancel
-    </a>
+        const locationSearch =
+            document.querySelector("#location_search");
+
+        const locationResults =
+            document.querySelector("#location_results");
+
+        const locationIdInput =
+            document.querySelector("#location_id");
+
+        const selectedLocation =
+            document.querySelector("#selected_location");
+
+
+        locationSearch.addEventListener("input", async function() {
+
+            const query = locationSearch.value.trim();
+
+            locationIdInput.value = "";
+            selectedLocation.textContent = "";
+
+
+            if (query.length < 2) {
+
+                locationResults.innerHTML = "";
+
+                return;
+            }
+
+
+            const response = await fetch(
+                `/api/locations/search?q=${encodeURIComponent(query)}`
+            );
+
+            const data = await response.json();
+
+            locationResults.innerHTML = "";
+
+
+            data.locations.forEach(function(location) {
+
+                const button =
+                    document.createElement("button");
+
+                button.type = "button";
+
+                button.textContent =
+                    `${location.name}, ${location.city || ""} ${location.country}`;
+
+
+                button.addEventListener("click", function() {
+
+                    locationIdInput.value =
+                        location.id;
+
+                    locationSearch.value =
+                        location.name;
+
+                    selectedLocation.textContent =
+                        `Selected: ${location.name}, ${location.country}`;
+
+                    locationResults.innerHTML = "";
+
+                });
+
+
+                locationResults.appendChild(button);
+
+            });
+
+
+            data.api_locations.forEach(function(location) {
+
+                const button =
+                    document.createElement("button");
+
+                button.type = "button";
+
+                button.textContent =
+                    location.display_name;
+
+
+                button.addEventListener("click", async function() {
+
+                    if (location.existing_id) {
+
+                        locationIdInput.value =
+                            location.existing_id;
+
+                        locationSearch.value =
+                            location.name;
+
+                        selectedLocation.textContent =
+                            `Selected: ${location.display_name}`;
+
+                        locationResults.innerHTML = "";
+
+                        return;
+                    }
+
+
+                    const response = await fetch(
+                        "/api/locations/create",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+
+                            body: JSON.stringify(location)
+                        }
+                    );
+
+
+                    const savedLocation =
+                        await response.json();
+
+
+                    if (!response.ok) {
+
+                        alert(
+                            savedLocation.error ||
+                            "Could not save location."
+                        );
+
+                        return;
+                    }
+
+
+                    locationIdInput.value =
+                        savedLocation.id;
+
+                    locationSearch.value =
+                        savedLocation.name;
+
+                    selectedLocation.textContent =
+                        `Selected: ${savedLocation.name}, ${location.country}`;
+
+                    locationResults.innerHTML = "";
+
+                });
+
+
+                locationResults.appendChild(button);
+
+            });
+
+        });
+
+    </script>
 
 {% endblock %}
-
