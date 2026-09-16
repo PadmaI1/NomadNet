@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, abort, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 import requests
-
-from models import db, Country, Follow, Post, Location
+from models import db, Country, Follow, Post, Location, LocationFollow, Like, Comment
+from datetime import datetime, timedelta
 
 
 locations = Blueprint("locations", __name__)
@@ -14,22 +14,127 @@ def home():
     countries = Country.query.all()
     locations = Location.query.all()
 
+    cutoff = datetime.utcnow() - timedelta(days=7)
+
+    recently_active_locations = (
+        db.session.query(Location)
+        .join(Post, Post.location_id == Location.id)
+        .filter(Post.created_at >= cutoff)
+        .group_by(Location.id)
+        .order_by(db.func.max(Post.created_at).desc())
+        .limit(10)
+        .all()
+    )
+
+    trending_post_counts = (
+    db.session.query(
+        Post.location_id,
+        db.func.count(Post.id)
+    )
+    .filter(Post.created_at >= cutoff)
+    .group_by(Post.location_id)
+    .all()
+    )
+
+    trending_like_counts = (
+    db.session.query(
+        Post.location_id,
+        db.func.count(Like.id)
+    )
+    .join(Like, Like.post_id == Post.id)
+    .filter(Post.created_at >= cutoff)
+    .group_by(Post.location_id)
+    .all()
+    )
+
+    trending_comment_counts = (
+    db.session.query(
+        Post.location_id,
+        db.func.count(Comment.id)
+    )
+    .join(Comment, Comment.post_id == Post.id)
+    .filter(Post.created_at >= cutoff)
+    .group_by(Post.location_id)
+    .all()
+    )
+
+    post_counts = dict(trending_post_counts)
+    like_counts = dict(trending_like_counts)
+    comment_counts = dict(trending_comment_counts)
+
+    trending_scores = []
+
+    for location_id, post_count in trending_post_counts:
+
+        like_count = like_counts.get(location_id, 0)
+
+        comment_count = comment_counts.get(location_id, 0)
+
+        score = (
+            post_count
+            + (like_count * 2)
+            + (comment_count * 3)
+        )
+
+        trending_scores.append(
+            (location_id, score)
+        )
+
+    trending_scores.sort(
+        key=lambda item: item[1],
+        reverse=True
+    )
+
+    top_location_ids = [
+        location_id
+        for location_id, score in trending_scores[:10]
+    ]
+
+    trending_locations = Location.query.filter(
+        Location.id.in_(top_location_ids)
+    ).all()
+
+    location_lookup = {
+        location.id: location
+        for location in trending_locations
+    }
+
+    trending_locations = [
+        location_lookup[location_id]
+        for location_id in top_location_ids
+    ]
+
+
     if current_user.is_authenticated:
 
-        following = Follow.query.filter_by(
-            follower_id=current_user.id
+        followed_locations = LocationFollow.query.filter_by(
+            user_id=current_user.id
         ).all()
 
-        user_ids = [current_user.id]
+        followed_location_ids = []
 
-        for follow in following:
-            user_ids.append(follow.followed_id)
+        for follow in followed_locations:
+            followed_location_ids.append(
+                follow.location_id
+            )
 
-        posts = Post.query.filter(
-            Post.user_id.in_(user_ids)
-        ).order_by(
-            Post.created_at.desc()
-        ).all()
+        if followed_location_ids:
+            posts = (
+                Post.query
+                .filter(
+                    Post.location_id.in_(followed_location_ids)
+                )
+                .order_by(
+                    Post.created_at.desc()
+                )
+                .all()
+            )
+
+        else:
+
+            posts = Post.query.order_by(
+                Post.created_at.desc()
+            ).all()
 
     else:
 
@@ -41,7 +146,9 @@ def home():
         "locations/home.html",
         countries=countries,
         locations=locations,
-        posts=posts
+        posts=posts,
+        recently_active_locations=recently_active_locations,
+        trending_locations=trending_locations
     )
 
 
@@ -53,16 +160,37 @@ def location_page(location_id):
     if location is None:
         abort(404)
 
+    is_following = False
+
+    if current_user.is_authenticated:
+
+        existing_follow = LocationFollow.query.filter_by(
+            user_id=current_user.id,
+            location_id=location.id
+        ).first()
+
+        if existing_follow:
+            is_following = True
+
     posts = Post.query.filter_by(
         location_id=location.id
     ).order_by(
         Post.created_at.desc()
     ).all()
 
+    contributor_ids = set()
+
+    for post in posts:
+        contributor_ids.add(post.user_id)
+
+    contributor_count = len(contributor_ids)
+
     return render_template(
         "locations/location.html",
         location=location,
-        posts=posts
+        posts=posts,
+        contributor_count=contributor_count,
+        is_following=is_following
     )
 
 
@@ -180,3 +308,47 @@ def create_location():
             location_id=location.id
         )
     )
+
+@locations.route(
+    "/location/<int:location_id>/follow",
+    methods=["POST"]
+)
+@login_required
+def follow_location(location_id):
+
+    location = Location.query.get(location_id)
+
+    if location is None:
+        abort(404)
+
+    existing_follow = LocationFollow.query.filter_by(
+        user_id=current_user.id,
+        location_id=location.id
+    ).first()
+
+    if existing_follow:
+
+        db.session.delete(existing_follow)
+        db.session.commit()
+
+        flash(f"You unfollowed {location.name}.")
+
+    else:
+
+        location_follow = LocationFollow(
+            user_id=current_user.id,
+            location_id=location.id
+        )
+
+        db.session.add(location_follow)
+        db.session.commit()
+
+        flash(f"You are now following {location.name}.")
+
+    return redirect(
+        url_for(
+            "locations.location_page",
+            location_id=location.id
+        )
+    )
+

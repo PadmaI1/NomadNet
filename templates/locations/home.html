@@ -53,6 +53,68 @@
 
     </ul>
 
+    <h2>Recently Active</h2>
+
+    {% if recently_active_locations %}
+
+        <ul>
+
+            {% for location in recently_active_locations %}
+
+                <li>
+
+                    <a href="{{ url_for('locations.location_page', location_id=location.id) }}">
+                        {{ location.name }}
+                    </a>
+
+                    <span>
+                        — {{ location.city }}, {{ location.country }}
+                    </span>
+
+                </li>
+
+            {% endfor %}
+
+        </ul>
+
+    {% else %}
+
+        <p>
+            No locations have recent activity yet.
+        </p>
+
+    {% endif %}
+
+    <h2>Trending Locations</h2>
+
+    {% if trending_locations %}
+
+        <ul>
+
+            {% for location in trending_locations %}
+
+                <li>
+                    <a href="{{ url_for('locations.location_page', location_id=location.id) }}">
+                        {{ location.name }}
+                    </a>
+
+                    <span>
+                        — {{ location.city }}, {{ location.country }}
+                    </span>
+                </li>
+
+            {% endfor %}
+
+        </ul>
+
+    {% else %}
+
+        <p>
+            No trending locations yet.
+        </p>
+
+    {% endif %}
+
 
     {% if current_user.is_authenticated %}
 
@@ -136,11 +198,6 @@
                     <a href="{{ url_for('locations.location_page', location_id=post.location.id) }}">
                         {{ post.location.name }}
                     </a>
-                </p>
-
-                <p>
-                    <strong>Location:</strong>
-                    {{ post.location.name }}
                 </p>
 
                 <small>

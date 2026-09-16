@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block content %}
@@ -19,6 +20,38 @@
         <strong>{{ posts|length }}</strong>
         post{% if posts|length != 1 %}s{% endif %}
     </p>
+
+    <p>
+        <strong>{{ contributor_count }}</strong>
+        contributor{% if contributor_count != 1 %}s{% endif %}
+    </p>
+
+ 
+    {% if current_user.is_authenticated %}
+
+        <form
+            method="POST"
+            action="{{ url_for(
+                'locations.follow_location',
+                location_id=location.id
+            ) }}"
+        >
+
+            {% if is_following %}
+                <button type="submit">
+                    Unfollow Location
+                </button>
+            {% else %}
+                <button type="submit">
+                    Follow Location
+                </button>
+            {% endif %}
+
+        </form>
+
+    {% endif %}
+
+
 
     <h2>Posts from {{ location.name }}</h2>
 
@@ -59,3 +92,4 @@
     {% endif %}
 
 {% endblock %}
+

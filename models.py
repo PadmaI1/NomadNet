@@ -211,3 +211,31 @@ class Follow(db.Model):
         foreign_keys=[followed_id],
         backref="followers"
     )
+
+class LocationFollow(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        nullable=False
+    )
+
+    location_id = db.Column(
+        db.Integer,
+        db.ForeignKey("location.id"),
+        nullable=False
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id",
+            "location_id",
+            name="unique_user_location_follow"
+        ),
+    )
+
