@@ -38,7 +38,7 @@ def home():
         ).all()
 
     return render_template(
-        "home.html",
+        "locations/home.html",
         countries=countries,
         locations=locations,
         posts=posts
@@ -60,7 +60,7 @@ def location_page(location_id):
     ).all()
 
     return render_template(
-        "location.html",
+        "locations/location.html",
         location=location,
         posts=posts
     )
@@ -127,7 +127,7 @@ def search_locations():
         api_locations.append(location_data)
 
     return render_template(
-        "search_locations.html",
+        "locations/search_locations.html",
         locations=locations,
         api_locations=api_locations,
         query=query

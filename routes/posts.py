@@ -158,7 +158,7 @@ def edit_post(post_id):
         return redirect(url_for("locations.home"))
 
     return render_template(
-        "edit_post.html",
+        "posts/edit_post.html",
         post=post,
         locations=Location.query.all()
     )
@@ -173,7 +173,7 @@ def post_detail(post_id):
         abort(404)
 
     return render_template(
-        "post_details.html",
+        "posts/post_details.html",
         post=post
     )
 

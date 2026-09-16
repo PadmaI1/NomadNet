@@ -19,19 +19,19 @@ def signup():
 
         if not username or not email or not password:
             flash("Please fill in all fields.")
-            return render_template("signup.html")
+            return render_template("auth/signup.html")
 
         existing_username = User.query.filter_by(username=username).first()
 
         if existing_username:
             flash("Username already exists. Please choose a different username.")
-            return render_template("signup.html")
+            return render_template("auth/signup.html")
 
         existing_email = User.query.filter_by(email=email).first()
 
         if existing_email:
             flash("Email already exists. Please choose a different email.")
-            return render_template("signup.html")
+            return render_template("auth/signup.html")
 
         hashed_password = generate_password_hash(password)
 
@@ -48,7 +48,7 @@ def signup():
 
         return redirect(url_for("auth.login"))
 
-    return render_template("signup.html")
+    return render_template("auth/signup.html")
 
 
 @auth.route("/login", methods=["GET", "POST"])
@@ -56,23 +56,23 @@ def login():
 
     if request.method == "POST":
 
-        email = request.form["email"]
+        username = request.form["username"]
         password = request.form["password"]
 
         user = User.query.filter_by(
-            email=email
+            username=username
         ).first()
 
         if user is None:
-            flash("Invalid email or password")
-            return render_template("login.html")
+            flash("Invalid username or password")
+            return render_template("auth/login.html")
 
         if not check_password_hash(
             user.password,
             password
         ):
-            flash("Invalid email or password")
-            return render_template("login.html")
+            flash("Invalid username or password")
+            return render_template("auth/login.html")
 
         login_user(user)
 
@@ -80,7 +80,7 @@ def login():
 
         return redirect(url_for("locations.home"))
 
-    return render_template("login.html")
+    return render_template("auth/login.html")
 
 
 @auth.route("/logout")

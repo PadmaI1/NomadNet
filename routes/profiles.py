@@ -36,7 +36,7 @@ def profile(username):
             is_following = True
 
     return render_template(
-        "profile.html",
+        "profiles/profile.html",
         user=user,
         posts=posts,
         is_following=is_following
