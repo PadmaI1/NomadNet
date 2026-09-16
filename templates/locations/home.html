@@ -11,7 +11,7 @@
 
     <h2>Explore NomadNet</h2>
 
-    <form method="GET" action="{{ url_for('search_locations') }}">
+    <form method="GET" action="{{ url_for('locations.search_locations') }}">
 
         <input
             type="text"
@@ -40,7 +40,7 @@
         {% for location in locations %}
 
             <li>
-                <a href="{{ url_for('location_page', location_id=location.id) }}">
+                <a href="{{ url_for('locations.location_page', location_id=location.id) }}">
                     {{ location.name }}
                 </a>
 
@@ -58,7 +58,7 @@
 
         <h2>Share your travel experience</h2>
 
-        <form action="{{ url_for('create_post') }}" method="POST">
+        <form action="{{ url_for('posts.create_post') }}" method="POST">
 
             <div>
                 <label for="content">What's on your mind?</label>
@@ -119,21 +119,21 @@
             <article>
 
                 <h3>
-                    <a href="{{ url_for('profile', username=post.author.username) }}">
+                    <a href="{{ url_for('profiles.profile', username=post.author.username) }}">
                         {{ post.author.username }}
                     </a>
 
                 </h3>
 
                 <p>
-                    <a href="{{ url_for('post_detail', post_id=post.id) }}">
+                    <a href="{{ url_for('posts.post_detail', post_id=post.id) }}">
                         {{ post.content }}
                     </a>
                 </p>
 
                 <p>
                     <strong>Location:</strong>
-                    <a href="{{ url_for('location_page', location_id=post.location.id) }}">
+                    <a href="{{ url_for('locations.location_page', location_id=post.location.id) }}">
                         {{ post.location.name }}
                     </a>
                 </p>
@@ -149,12 +149,12 @@
 
                 {% if current_user.is_authenticated and post.user_id == current_user.id %}
 
-                    <a href="{{ url_for('edit_post', post_id=post.id) }}">
+                    <a href="{{ url_for('posts.edit_post', post_id=post.id) }}">
                         Edit
                     </a>    
 
                     <form
-                        action="{{ url_for('delete_post', post_id=post.id) }}"
+                        action="{{ url_for('posts.delete_post', post_id=post.id) }}"
                         method="POST"
                     >
                         <button type="submit">Delete</button>

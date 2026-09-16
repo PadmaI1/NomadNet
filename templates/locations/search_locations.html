@@ -4,7 +4,7 @@
 
 <h1>Search locations</h1>
 
-<form method="GET" action="{{ url_for('search_locations') }}">
+<form method="GET" action="{{ url_for('locations.search_locations') }}">
     <input
         type="text"
         name="q"
@@ -25,7 +25,7 @@
             <p>{{ location.city }}, {{ location.country }}</p>
             <p>{{ location.type }}</p>
 
-            <a href="{{ url_for('location_page', location_id=location.id) }}">
+            <a href="{{ url_for('locations.location_page', location_id=location.id) }}">
                 View location
             </a>
         </div>
@@ -45,7 +45,7 @@
 
             <p>{{ location.type }}</p>
 
-            <form method="POST" action="{{ url_for('create_location') }}">
+            <form method="POST" action="{{ url_for('api.create_location') }}">
                 <input type="hidden" name="name" value="{{ location.name }}">
                 <input type="hidden" name="type" value="{{ location.type }}">
                 <input type="hidden" name="country" value="{{ location.country }}">

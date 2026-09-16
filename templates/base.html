@@ -11,18 +11,18 @@
     <nav>
         <h2>🌍 NomadNet</h2>
 
-        <a href="{{ url_for('home') }}">Home</a>
-        <a href="{{ url_for('search_locations') }}">Search Locations</a>
+        <a href="{{ url_for('locations.home') }}">Home</a>
+        <a href="{{ url_for('locations.search_locations') }}">Search Locations</a>
 
         {% if current_user.is_authenticated %}
 
-            <a href="{{ url_for('profile', username=current_user.username) }}">Profile</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
+            <a href="{{ url_for('profiles.profile', username=current_user.username) }}">Profile</a>
+            <a href="{{ url_for('auth.logout') }}">Logout</a>
 
         {% else %}
 
-            <a href="{{ url_for('login') }}">Login</a>
-            <a href="{{ url_for('signup') }}">Sign Up</a>
+            <a href="{{ url_for('auth.login') }}">Login</a>
+            <a href="{{ url_for('auth.signup') }}">Sign Up</a>
 
         {% endif %}
 

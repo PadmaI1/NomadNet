@@ -8,7 +8,7 @@
     <article>
 
         <h2>
-            <a href="{{ url_for('profile', username=post.author.username) }}">
+            <a href="{{ url_for('profiles.profile', username=post.author.username) }}">
                 {{ post.author.username }}
             </a>
         </h2>
@@ -32,12 +32,12 @@
 
     {% if current_user.is_authenticated and post.user_id == current_user.id %}
 
-        <a href="{{ url_for('edit_post', post_id=post.id) }}">
+        <a href="{{ url_for('posts.edit_post', post_id=post.id) }}">
             Edit
         </a>
 
         <form
-            action="{{ url_for('delete_post', post_id=post.id) }}"
+            action="{{ url_for('posts.delete_post', post_id=post.id) }}"
             method="POST"
         >
             <button type="submit">
@@ -54,7 +54,7 @@
     {% if current_user.is_authenticated %}
 
         <form
-            action="{{ url_for('like_post', post_id=post.id) }}"
+            action="{{ url_for('posts.like_post', post_id=post.id) }}"
             method="POST"
         >
             <button type="submit">
@@ -80,7 +80,7 @@
     {% if current_user.is_authenticated %}
 
         <form
-            action="{{ url_for('create_comment', post_id=post.id) }}"
+            action="{{ url_for('posts.create_comment', post_id=post.id) }}"
             method="POST"
         >
 
@@ -120,7 +120,7 @@
             <article>
 
                 <h4>
-                    <a href="{{ url_for('profile', username=comment.author.username) }}">
+                    <a href="{{ url_for('profiles.profile', username=comment.author.username) }}">
                         {{ comment.author.username }}
                     </a>
                 </h4>
@@ -136,7 +136,7 @@
                 {% if current_user.is_authenticated and comment.user_id == current_user.id %}
 
                     <form
-                        action="{{ url_for('delete_comment', comment_id=comment.id) }}"
+                        action="{{ url_for('posts.delete_comment', comment_id=comment.id) }}"
                         method="POST"
                     >
                         <button type="submit">
@@ -160,7 +160,7 @@
 
     {% endif %}
 
-    <a href="{{ url_for('home') }}">
+    <a href="{{ url_for('locations.home') }}">
         ← Back to Home
     </a>
 
