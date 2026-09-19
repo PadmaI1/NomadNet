@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, abort, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 
-from models import db, User, Post, Follow
+from models import db, User, Post, Follow, Location
 
 
 profiles = Blueprint("profiles", __name__)
@@ -23,6 +23,14 @@ def profile(username):
         Post.created_at.desc()
     ).all()
 
+    locations = (
+    Location.query
+    .join(Post, Location.id == Post.location_id)
+    .filter(Post.user_id == user.id)
+    .distinct()
+    .all()
+    )
+
     is_following = False
 
     if current_user.is_authenticated:
@@ -39,6 +47,7 @@ def profile(username):
         "profiles/profile.html",
         user=user,
         posts=posts,
+        locations=locations,
         is_following=is_following
     )
 

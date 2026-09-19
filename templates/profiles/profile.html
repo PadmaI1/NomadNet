@@ -9,6 +9,18 @@
         {{ user.created_at.strftime("%d %B %Y") }}
     </p>
 
+    <div>
+        <p>
+            <strong>{{ posts|length }}</strong>
+            Posts
+        </p>
+
+        <p>
+            <strong>{{ locations|length }}</strong>
+            Locations
+        </p>
+    </div>
+
     <hr>
 
     {% if current_user.is_authenticated and current_user.id != user.id %}
@@ -31,6 +43,34 @@
 
     {% endif %}
 
+    <h2>Locations Contributed To</h2>
+
+    {% if locations %}
+
+        {% for location in locations %}
+
+            <p>
+                <a href="{{ url_for('locations.location_page', location_id=location.id) }}">
+                    {{ location.name }}
+                </a>
+
+                {% if location.city %}
+                    — {{ location.city }}
+                {% endif %}
+
+                — {{ location.country }}
+            </p>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>
+            No locations contributed to yet.
+        </p>
+
+    {% endif %}
+
     <h2>{{ user.username }}'s Posts</h2>
 
     {% if posts %}
@@ -50,8 +90,20 @@
                 </p>
 
                 <p>
-                    <strong>Country:</strong>
-                        {{ post.location.country }}
+                    <strong>Location:</strong>
+
+                    <a href="{{ url_for(
+                        'locations.location_page',
+                        location_id=post.location.id
+                    ) }}">
+                        {{ post.location.name }}
+                    </a>
+
+                    {% if post.location.city %}
+                        — {{ post.location.city }}
+                    {% endif %}
+
+                    — {{ post.location.country }}
                 </p>
 
                 <small>

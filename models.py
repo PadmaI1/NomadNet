@@ -280,3 +280,63 @@ class LocationFollow(db.Model):
         ),
     )
 
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    recipient_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        nullable=False
+    )
+
+    actor_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        nullable=False
+    )
+
+    notification_type = db.Column(
+        db.String(50),
+        nullable=False
+    )
+
+    post_id = db.Column(
+        db.Integer,
+        db.ForeignKey("post.id"),
+        nullable=True
+    )
+
+    comment_id = db.Column(
+        db.Integer,
+        db.ForeignKey("comment.id"),
+        nullable=True
+    )
+
+    location_id = db.Column(
+        db.Integer,
+        db.ForeignKey("location.id"),
+        nullable=True
+    )
+
+    is_read = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    recipient = db.relationship(
+        "User",
+        foreign_keys=[recipient_id],
+        backref="notifications_received"
+    )
+
+    actor = db.relationship(
+        "User",
+        foreign_keys=[actor_id]
+    )
