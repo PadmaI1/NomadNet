@@ -48,6 +48,57 @@
         </div>
 
 
+        {% if post.media %}
+            <div>
+                <h2>Existing media</h2>
+
+                {% for media in post.media %}
+
+                    <div>
+
+                        {% if media.media_type == "image" %}
+
+                            <img
+                                src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
+                                alt="Image from {{ post.location.name }}"
+                                style="max-width: 300px;"
+                            >
+
+                        {% elif media.media_type == "video" %}
+
+                            <video
+                                controls
+                                style="max-width: 300px;"
+                            >
+                                <source
+                                    src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
+                                    type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}"
+                                >
+                                Your browser does not support video playback.
+                            </video>
+
+                        {% endif %}
+
+                        <div>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="delete_media"
+                                    value="{{ media.id }}"
+                                >
+                                Remove this media
+                            </label>
+                        </div>
+
+                    </div>
+
+                    <hr>
+
+                {% endfor %}
+
+            </div>
+        {% endif %}
+
         <button type="submit">
             Update Post
         </button>

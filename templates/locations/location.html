@@ -73,6 +73,35 @@
                     </a>
                 </p>
 
+                {% for media in post.media %}
+
+                    {% if media.media_type == "image" %}
+
+                        <img
+                            src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
+                            alt="Image from {{ post.location.name }}"
+                            style="max-width: 500px;"
+                        >
+
+                    {% elif media.media_type == "video" %}
+
+                        <video
+                            controls
+                            style="max-width: 500px;"
+                        >
+                            <source
+                                src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
+                                type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}"
+                            >
+                            Your browser does not support video playback.
+                        </video>
+
+                    {% endif %}
+
+                {% endfor %}  
+                
+                <br>
+                
                 <small>
                     {{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}
                 </small>

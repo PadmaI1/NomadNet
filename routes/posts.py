@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, abort, request, flash, redirect, url_for, jsonify
+from flask import Blueprint, render_template, abort, request, flash, redirect, url_for, jsonify, current_app
 from flask_login import login_required, current_user
 
-from models import db, Post, Comment, Like, Location
-
+from models import PostMedia, db, Post, Comment, Like, Location
+import os
+import uuid
 
 posts = Blueprint("posts", __name__)
 
@@ -62,12 +63,16 @@ Post(location_id=7)
 DATABASE
 '''
 
+ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
+ALLOWED_VIDEO_EXTENSIONS = {"mp4", "webm", "mov"}
+
+
 @posts.route("/posts/create", methods=["POST"])
 @login_required
 def create_post():
-
     content = request.form["content"]
     location_id = request.form.get("location_id")
+    media_files = request.files.getlist("media")
 
     if not location_id:
         flash("Please select a location.")
@@ -83,17 +88,64 @@ def create_post():
         flash("Invalid location.")
         return redirect(url_for("locations.home"))
 
+    media_type = None
+    extension = None
+
+    validated_media = []
+
+    for media_file in media_files:
+
+        if not media_file.filename:
+            continue
+
+        extension = media_file.filename.rsplit(".", 1)[1].lower()
+
+        if extension in ALLOWED_IMAGE_EXTENSIONS:
+            media_type = "image"
+
+        elif extension in ALLOWED_VIDEO_EXTENSIONS:
+            media_type = "video"
+
+        else:
+            flash("Invalid image or video format.")
+            return redirect(url_for("locations.home"))
+
+        validated_media.append(
+            (media_file, extension, media_type)
+        )
+
     post = Post(
-        content=content,
+        content=content.strip(),
         user_id=current_user.id,
         location_id=location.id
     )
 
     db.session.add(post)
+    db.session.flush()
+
+    for index, (media_file, extension, media_type) in enumerate(validated_media):
+
+        filename = f"{uuid.uuid4().hex}.{extension}"
+
+        filepath = os.path.join(
+            current_app.config["UPLOAD_FOLDER"],
+            filename
+        )
+
+        media_file.save(filepath)
+
+        media = PostMedia(
+            post_id=post.id,
+            filename=filename,
+            media_type=media_type,
+            display_order=index
+        )
+
+        db.session.add(media)
+
     db.session.commit()
 
     flash("Post created successfully!")
-
     return redirect(url_for("locations.home"))
 
 
@@ -109,13 +161,22 @@ def delete_post(post_id):
     if post.user_id != current_user.id:
         abort(403)
 
+    for media in post.media:
+
+        filepath = os.path.join(
+            current_app.config["UPLOAD_FOLDER"],
+            media.filename
+        )
+
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
     db.session.delete(post)
     db.session.commit()
 
     flash("Post deleted successfully.")
 
     return redirect(url_for("locations.home"))
-
 
 @posts.route("/posts/<int:post_id>/edit", methods=["GET", "POST"])
 @login_required
@@ -134,6 +195,8 @@ def edit_post(post_id):
         content = request.form["content"]
         location_id = request.form["location_id"]
 
+        delete_media_ids = request.form.getlist("delete_media")
+
         if not content.strip():
             flash("Post cannot be empty.")
             return redirect(
@@ -150,6 +213,26 @@ def edit_post(post_id):
 
         post.content = content.strip()
         post.location_id = location.id
+
+        for media_id in delete_media_ids:
+
+            media = PostMedia.query.filter_by(
+                id=media_id,
+                post_id=post.id
+            ).first()
+
+            if media is None:
+                continue
+
+            filepath = os.path.join(
+                current_app.config["UPLOAD_FOLDER"],
+                media.filename
+            )
+
+            if os.path.exists(filepath):
+                os.remove(filepath)
+
+            db.session.delete(media)
 
         db.session.commit()
 

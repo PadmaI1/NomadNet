@@ -63,6 +63,47 @@ class Post(db.Model):
     comments = db.relationship("Comment", backref="post", lazy=True)
     likes = db.relationship("Like",backref="post",lazy=True)
     location = db.relationship("Location",backref="posts",lazy=True)
+    media = db.relationship(
+    "PostMedia",
+    backref="post",
+    lazy=True,
+    cascade="all, delete-orphan",
+    order_by="PostMedia.display_order"
+)
+
+class PostMedia(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    post_id = db.Column(
+        db.Integer,
+        db.ForeignKey("post.id"),
+        nullable=False
+    )
+
+    filename = db.Column(
+        db.String(255),
+        nullable=False
+    )
+
+    media_type = db.Column(
+        db.String(20),
+        nullable=False
+    )
+
+    display_order = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
 
 class Country(db.Model):
     id = db.Column(db.Integer, primary_key=True)

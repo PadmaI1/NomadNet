@@ -20,6 +20,14 @@ load_dotenv()
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///nomadnet.db"
 
+app.config["UPLOAD_FOLDER"] = os.path.join(
+    app.root_path,
+    "static",
+    "uploads",
+    "posts"
+)
+app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
+
 
 db.init_app(app)
 
