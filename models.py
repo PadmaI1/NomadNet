@@ -60,8 +60,8 @@ class Post(db.Model):
         nullable=True
     )
 
-    comments = db.relationship("Comment", backref="post", lazy=True)
-    likes = db.relationship("Like",backref="post",lazy=True)
+    comments = db.relationship("Comment", backref="post", lazy=True, cascade="all, delete-orphan")
+    likes = db.relationship("Like",backref="post",lazy=True, cascade="all, delete-orphan")
     location = db.relationship("Location",backref="posts",lazy=True)
     media = db.relationship(
     "PostMedia",

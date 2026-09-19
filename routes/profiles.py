@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, abort, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 
-from models import db, User, Post, Follow, Location
+from models import db, User, Post, Follow, Location, Notification
 
 
 profiles = Blueprint("profiles", __name__)
@@ -92,6 +92,15 @@ def follow_user(username):
         )
 
         db.session.add(follow)
+
+        notification = Notification(
+            recipient_id=user.id,
+            actor_id=current_user.id,
+            notification_type="follow"
+        )
+
+        db.session.add(notification)
+
         db.session.commit()
 
         flash(f"You are now following {user.username}.")

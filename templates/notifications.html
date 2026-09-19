@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>Notifications</h1>
+
+    {% if notifications %}
+
+        {% for notification in notifications %}
+
+            <article>
+
+                {% if notification.notification_type == "like" %}
+
+                    <p>
+                        <strong>{{ notification.actor.username }}</strong>
+                        liked your post.
+                    </p>
+
+                    <a href="{{ url_for(
+                        'posts.post_detail',
+                        post_id=notification.post_id
+                    ) }}">
+                        View post
+                    </a>
+
+                {% elif notification.notification_type == "comment" %}
+
+                    <p>
+                        <strong>{{ notification.actor.username }}</strong>
+                        commented on your post.
+                    </p>
+
+                    <a href="{{ url_for(
+                        'posts.post_detail',
+                        post_id=notification.post_id
+                    ) }}">
+                        View post
+                    </a>
+
+                {% elif notification.notification_type == "follow" %}
+
+                    <p>
+                        <strong>{{ notification.actor.username }}</strong>
+                        started following you.
+                    </p>
+
+                    <a href="{{ url_for(
+                        'profiles.profile',
+                        username=notification.actor.username
+                    ) }}">
+                        View profile
+                    </a>
+
+                {% endif %}
+
+                <small>
+                    {{ notification.created_at.strftime(
+                        "%d %B %Y, %I:%M %p"
+                    ) }}
+                </small>
+
+            </article>
+
+            <hr>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>
+            You don't have any notifications yet.
+        </p>
+
+    {% endif %}
+
+    <a href="{{ url_for('locations.home') }}">
+        ← Back to Home
+    </a>
+
+{% endblock %}

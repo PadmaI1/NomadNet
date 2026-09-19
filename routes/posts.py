@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, abort, request, flash, redirect, url_for, jsonify, current_app
 from flask_login import login_required, current_user
+from requests import post
 
-from models import PostMedia, db, Post, Comment, Like, Location
+from models import PostMedia, db, Post, Comment, Like, Location, Notification
 import os
 import uuid
 
@@ -161,6 +162,10 @@ def delete_post(post_id):
     if post.user_id != current_user.id:
         abort(403)
 
+    Notification.query.filter_by(
+        post_id=post.id
+    ).delete()
+
     for media in post.media:
 
         filepath = os.path.join(
@@ -298,6 +303,19 @@ def create_comment(post_id):
     )
 
     db.session.add(comment)
+    db.session.flush()
+
+    if post.user_id != current_user.id:
+        notification = Notification(
+            recipient_id=post.user_id,
+            actor_id=current_user.id,
+            notification_type="comment",
+            post_id=post.id,
+            comment_id=comment.id
+        )
+
+        db.session.add(notification)
+
     db.session.commit()
 
     flash("Comment added successfully.")
@@ -320,6 +338,10 @@ def delete_comment(comment_id):
         abort(403)
 
     post_id = comment.post_id
+
+    Notification.query.filter_by(
+        comment_id=comment.id
+    ).delete()
 
     db.session.delete(comment)
     db.session.commit()
@@ -359,6 +381,16 @@ def like_post(post_id):
 
         db.session.add(like)
         liked = True
+
+        if post.user_id != current_user.id:
+            notification = Notification(
+                recipient_id=post.user_id,
+                actor_id=current_user.id,
+                notification_type="like",
+                post_id=post.id
+            )
+
+            db.session.add(notification)
 
     db.session.commit()
 

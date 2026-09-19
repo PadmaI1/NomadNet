@@ -1,6 +1,6 @@
 from flask import Flask, render_template
-from models import db, User
-from flask_login import LoginManager
+from models import db, User, Notification
+from flask_login import LoginManager, current_user
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 
@@ -9,6 +9,7 @@ from routes.locations import locations
 from routes.posts import posts
 from routes.profiles import profiles
 from routes.api import api
+from routes.notifications import notifications
 
 import os
 
@@ -52,7 +53,22 @@ app.register_blueprint(locations)
 app.register_blueprint(posts)
 app.register_blueprint(profiles)
 app.register_blueprint(api)
+app.register_blueprint(notifications)
 
+@app.context_processor
+def inject_unread_notification_count():
+
+    unread_count = 0
+
+    if current_user.is_authenticated:
+        unread_count = Notification.query.filter_by(
+            recipient_id=current_user.id,
+            is_read=False
+        ).count()
+
+    return {
+        "unread_count": unread_count
+    }
 
 @app.errorhandler(404)
 def pagenotfound(error):

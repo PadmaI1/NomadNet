@@ -21,6 +21,22 @@
         </p>
     </div>
 
+    {% if current_user.is_authenticated and current_user.id == user.id %}
+
+        <h2>Account</h2>
+
+        <form
+            method="POST"
+            action="{{ url_for('auth.delete_account') }}"
+            onsubmit="return confirm('Are you sure you want to permanently delete your account? This action cannot be undone.');"
+        >
+            <button type="submit">
+                Delete My Account
+            </button>
+        </form>
+
+    {% endif %}
+
     <hr>
 
     {% if current_user.is_authenticated and current_user.id != user.id %}
