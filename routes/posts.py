@@ -71,7 +71,7 @@ ALLOWED_VIDEO_EXTENSIONS = {"mp4", "webm", "mov"}
 @posts.route("/posts/create", methods=["POST"])
 @login_required
 def create_post():
-    content = request.form["content"]
+    content = request.form.get("content")
     location_id = request.form.get("location_id")
     media_files = request.files.getlist("media")
 

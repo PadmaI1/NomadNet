@@ -83,7 +83,7 @@ def login():
     return render_template("auth/login.html")
 
 
-@auth.route("/logout")
+@auth.route("/logout", methods=["POST"])
 def logout():
 
     logout_user()
@@ -91,12 +91,6 @@ def logout():
     flash("Logged out successfully!")
 
     return redirect(url_for("locations.home"))
-
-@auth.route("/account")
-@login_required
-def account():
-
-    return render_template("account.html")
 
 @auth.route("/account/delete", methods=["POST"])
 @login_required

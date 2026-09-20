@@ -30,6 +30,9 @@
             action="{{ url_for('auth.delete_account') }}"
             onsubmit="return confirm('Are you sure you want to permanently delete your account? This action cannot be undone.');"
         >
+
+             {{ csrf_token() }}
+
             <button type="submit">
                 Delete My Account
             </button>
@@ -45,6 +48,9 @@
             action="{{ url_for('profiles.follow_user', username=user.username) }}"
             method="POST"
         >
+
+             {{ csrf_token() }}
+
         {% if is_following %}
             <button type="submit">
                 Unfollow

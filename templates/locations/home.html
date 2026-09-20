@@ -124,6 +124,8 @@
             method="POST"
             enctype="multipart/form-data">
 
+             {{ csrf_token() }}
+
             <div>
                 <label for="content">What's on your mind?</label>
             </div>
@@ -252,6 +254,9 @@
                         action="{{ url_for('posts.delete_post', post_id=post.id) }}"
                         method="POST"
                     >
+
+                         {{ csrf_token() }}
+
                         <button type="submit">Delete</button>
                     </form>
 
@@ -279,6 +284,8 @@
     const locationResults = document.querySelector("#location_results");
     const locationIdInput = document.querySelector("#location_id");
     const selectedLocation = document.querySelector("#selected_location");
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
 
 
     locationSearch.addEventListener("input", async function() {
@@ -359,7 +366,8 @@
                         method: "POST",
 
                         headers: {
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken
                         },
 
                         body: JSON.stringify(location)

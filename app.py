@@ -10,11 +10,12 @@ from routes.posts import posts
 from routes.profiles import profiles
 from routes.api import api
 from routes.notifications import notifications
-
 import os
+from flask_wtf.csrf import CSRFProtect
 
 
 app = Flask(__name__)
+
 
 load_dotenv()
 
@@ -29,6 +30,7 @@ app.config["UPLOAD_FOLDER"] = os.path.join(
 )
 app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024
 
+csrf = CSRFProtect(app)
 
 db.init_app(app)
 

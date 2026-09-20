@@ -6,6 +6,8 @@
 
     <form method="POST">
 
+         {{ csrf_token() }}
+
         <div>
             <label for="content">Your post</label>
         </div>
@@ -105,157 +107,160 @@
 
     </form>
 
-    <script>
+<script>
 
-        const locationSearch =
-            document.querySelector("#location_search");
+    const locationSearch =
+        document.querySelector("#location_search");
 
-        const locationResults =
-            document.querySelector("#location_results");
+    const locationResults =
+        document.querySelector("#location_results");
 
-        const locationIdInput =
-            document.querySelector("#location_id");
+    const locationIdInput =
+        document.querySelector("#location_id");
 
-        const selectedLocation =
-            document.querySelector("#selected_location");
+    const selectedLocation =
+        document.querySelector("#selected_location");
 
-
-        locationSearch.addEventListener("input", async function() {
-
-            const query = locationSearch.value.trim();
-
-            locationIdInput.value = "";
-            selectedLocation.textContent = "";
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
 
 
-            if (query.length < 2) {
+    locationSearch.addEventListener("input", async function() {
 
-                locationResults.innerHTML = "";
+        const query = locationSearch.value.trim();
 
-                return;
-            }
+        locationIdInput.value = "";
+        selectedLocation.textContent = "";
 
 
-            const response = await fetch(
-                `/api/locations/search?q=${encodeURIComponent(query)}`
-            );
-
-            const data = await response.json();
+        if (query.length < 2) {
 
             locationResults.innerHTML = "";
 
-
-            data.locations.forEach(function(location) {
-
-                const button =
-                    document.createElement("button");
-
-                button.type = "button";
-
-                button.textContent =
-                    `${location.name}, ${location.city || ""} ${location.country}`;
+            return;
+        }
 
 
-                button.addEventListener("click", function() {
+        const response = await fetch(
+            `/api/locations/search?q=${encodeURIComponent(query)}`
+        );
+
+        const data = await response.json();
+
+        locationResults.innerHTML = "";
+
+
+        data.locations.forEach(function(location) {
+
+            const button =
+                document.createElement("button");
+
+            button.type = "button";
+
+            button.textContent =
+                `${location.name}, ${location.city || ""} ${location.country}`;
+
+
+            button.addEventListener("click", function() {
+
+                locationIdInput.value =
+                    location.id;
+
+                locationSearch.value =
+                    location.name;
+
+                selectedLocation.textContent =
+                    `Selected: ${location.name}, ${location.country}`;
+
+                locationResults.innerHTML = "";
+
+            });
+
+
+            locationResults.appendChild(button);
+
+        });
+
+
+        data.api_locations.forEach(function(location) {
+
+            const button =
+                document.createElement("button");
+
+            button.type = "button";
+
+            button.textContent =
+                location.display_name;
+
+
+            button.addEventListener("click", async function() {
+
+                if (location.existing_id) {
 
                     locationIdInput.value =
-                        location.id;
+                        location.existing_id;
 
                     locationSearch.value =
                         location.name;
 
                     selectedLocation.textContent =
-                        `Selected: ${location.name}, ${location.country}`;
+                        `Selected: ${location.display_name}`;
 
                     locationResults.innerHTML = "";
 
-                });
+                    return;
+                }
 
 
-                locationResults.appendChild(button);
+                const response = await fetch(
+                    "/api/locations/create",
+                    {
+                        method: "POST",
 
-            });
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken
+                        },
 
-
-            data.api_locations.forEach(function(location) {
-
-                const button =
-                    document.createElement("button");
-
-                button.type = "button";
-
-                button.textContent =
-                    location.display_name;
-
-
-                button.addEventListener("click", async function() {
-
-                    if (location.existing_id) {
-
-                        locationIdInput.value =
-                            location.existing_id;
-
-                        locationSearch.value =
-                            location.name;
-
-                        selectedLocation.textContent =
-                            `Selected: ${location.display_name}`;
-
-                        locationResults.innerHTML = "";
-
-                        return;
+                        body: JSON.stringify(location)
                     }
+                );
 
 
-                    const response = await fetch(
-                        "/api/locations/create",
-                        {
-                            method: "POST",
+                const savedLocation =
+                    await response.json();
 
-                            headers: {
-                                "Content-Type": "application/json"
-                            },
 
-                            body: JSON.stringify(location)
-                        }
+                if (!response.ok) {
+
+                    alert(
+                        savedLocation.error ||
+                        "Could not save location."
                     );
 
-
-                    const savedLocation =
-                        await response.json();
-
-
-                    if (!response.ok) {
-
-                        alert(
-                            savedLocation.error ||
-                            "Could not save location."
-                        );
-
-                        return;
-                    }
+                    return;
+                }
 
 
-                    locationIdInput.value =
-                        savedLocation.id;
+                locationIdInput.value =
+                    savedLocation.id;
 
-                    locationSearch.value =
-                        savedLocation.name;
+                locationSearch.value =
+                    savedLocation.name;
 
-                    selectedLocation.textContent =
-                        `Selected: ${savedLocation.name}, ${location.country}`;
+                selectedLocation.textContent =
+                    `Selected: ${savedLocation.name}, ${location.country}`;
 
-                    locationResults.innerHTML = "";
-
-                });
-
-
-                locationResults.appendChild(button);
+                locationResults.innerHTML = "";
 
             });
+
+
+            locationResults.appendChild(button);
 
         });
 
-    </script>
+    });
+
+</script>
 
 {% endblock %}

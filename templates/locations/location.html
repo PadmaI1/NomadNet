@@ -37,6 +37,8 @@
             ) }}"
         >
 
+         {{ csrf_token() }}
+
             {% if is_following %}
                 <button type="submit">
                     Unfollow Location
