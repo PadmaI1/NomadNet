@@ -3,278 +3,369 @@
 
 {% block content %}
 
-    <h1>Welcome to NomadNet 🌍</h1>
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #1B4D5C 0%, #2A6B7D 100%);
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 24px rgba(27, 77, 92, 0.2);
+    }
 
-    <p>
-        Explore what travellers are saying around the world.
-    </p>
+    .hero-section h1 {
+        color: white;
+        margin: 0 0 0.5rem 0;
+    }
 
-    <h2>Explore NomadNet</h2>
+    .hero-section > p {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.1rem;
+        margin: 0;
+    }
 
-    <form method="GET" action="{{ url_for('locations.search_locations') }}">
+    .search-section {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
 
-        <input
-            type="text"
-            name="q"
-            placeholder="Search for a location"
-        >
+    .search-section form {
+        display: flex;
+        gap: 1rem;
+        flex: 1;
+        min-width: 300px;
+        margin-bottom: 0;
+    }
 
-        <button type="submit">
-            Search
-        </button>
+    .search-section form input {
+        flex: 1;
+    }
 
-    </form>
+    .near-me-wrapper {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
 
-    <button type="button" id="near_me_button">
-    📍 Near Me
-    </button>
+    #near_me_button {
+        white-space: nowrap;
+    }
 
-    <p id="near_me_status"></p>
+    .locations-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .locations-grid li {
+        list-style: none;
+    }
+
+    .post-form-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(27, 77, 92, 0.1);
+        margin-bottom: 2rem;
+        border: 2px solid #E0D5CC;
+    }
+
+    .post-form-section h2 {
+        margin-top: 0;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #1B4D5C;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+    }
+
+    .location-dropdown {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+
+    #location_results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #E0D5CC;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    #location_results button {
+        display: block;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: none;
+        background: white;
+        color: #1B4D5C;
+        text-align: left;
+        cursor: pointer;
+        border-bottom: 1px solid #E0D5CC;
+        transition: background 0.2s;
+        font-weight: 500;
+        box-shadow: none;
+    }
+
+    #location_results button:last-child {
+        border-bottom: none;
+    }
+
+    #location_results button:hover {
+        background: #F5F3F0;
+        transform: none;
+    }
+
+    #selected_location {
+        color: #6B8E6F;
+        font-weight: 600;
+        display: block;
+        margin-top: 0.5rem;
+    }
+
+    .posts-section {
+        margin-top: 2rem;
+    }
+
+    article {
+        margin-bottom: 2rem;
+    }
+</style>
+
+    <div class="hero-section">
+        <h1>Welcome to NomadNet 🌍</h1>
+        <p>Discover what travellers are experiencing around the world. Find your next sanctuary.</p>
+    </div>
+
+    <h2>Explore Destinations</h2>
+
+    <div class="search-section">
+        <form method="GET" action="{{ url_for('locations.search_locations') }}">
+            <input
+                type="text"
+                name="q"
+                placeholder="🔍 Search for a location..."
+            >
+            <button type="submit">
+                Search
+            </button>
+        </form>
+
+        <div class="near-me-wrapper">
+            <button type="button" id="near_me_button">
+                📍 Near Me
+            </button>
+        </div>
+    </div>
+
+    <p id="near_me_status" style="font-weight: 600; color: #1B4D5C;"></p>
 
     <div id="nearby_locations"></div>
 
-    <h2>Explore locations</h2>
+    <h2>🗺️ All Locations</h2>
 
-    <ul>
-
+    <ul class="locations-grid">
         {% for location in locations %}
-
             <li>
                 <a href="{{ url_for('locations.location_page', location_id=location.id) }}">
                     {{ location.name }}
                 </a>
-
-                <span>
-                    — {{ location.city }}, {{ location.country }}
-                </span>
+                <span>— {{ location.city }}, {{ location.country }}</span>
             </li>
-
         {% endfor %}
-
     </ul>
 
-    <h2>Recently Active</h2>
+    <h2>🔥 Recently Active</h2>
 
     {% if recently_active_locations %}
-
-        <ul>
-
+        <ul class="locations-grid">
             {% for location in recently_active_locations %}
-
                 <li>
-
                     <a href="{{ url_for('locations.location_page', location_id=location.id) }}">
                         {{ location.name }}
                     </a>
-
-                    <span>
-                        — {{ location.city }}, {{ location.country }}
-                    </span>
-
+                    <span>— {{ location.city }}, {{ location.country }}</span>
                 </li>
-
             {% endfor %}
-
         </ul>
-
     {% else %}
-
-        <p>
+        <p style="text-align: center; color: #5A6C7D; padding: 2rem; background: #F5F3F0; border-radius: 12px;">
             No locations have recent activity yet.
         </p>
-
     {% endif %}
 
-    <h2>Trending Locations</h2>
+    <h2>⭐ Trending Locations</h2>
 
     {% if trending_locations %}
-
-        <ul>
-
+        <ul class="locations-grid">
             {% for location in trending_locations %}
-
                 <li>
                     <a href="{{ url_for('locations.location_page', location_id=location.id) }}">
                         {{ location.name }}
                     </a>
-
-                    <span>
-                        — {{ location.city }}, {{ location.country }}
-                    </span>
+                    <span>— {{ location.city }}, {{ location.country }}</span>
                 </li>
-
             {% endfor %}
-
         </ul>
-
     {% else %}
-
-        <p>
+        <p style="text-align: center; color: #5A6C7D; padding: 2rem; background: #F5F3F0; border-radius: 12px;">
             No trending locations yet.
         </p>
-
     {% endif %}
 
 
     {% if current_user.is_authenticated %}
 
-        <h2>Share your travel experience</h2>
+        <div class="post-form-section">
+            <h2 style="border: none; padding: 0; margin: 0 0 1.5rem 0;">✍️ Share Your Travel Experience</h2>
 
-        <form action="{{ url_for('posts.create_post') }}"
-            method="POST"
-            enctype="multipart/form-data">
+            <form action="{{ url_for('posts.create_post') }}"
+                method="POST"
+                enctype="multipart/form-data">
 
-             {{ csrf_token() }}
+                {{ csrf_token() }}
 
-            <div>
-                <label for="content">What's on your mind?</label>
-            </div>
+                <div class="form-group">
+                    <label for="content">What's on your mind?</label>
+                    <textarea
+                        id="content"
+                        name="content"
+                        rows="5"
+                        placeholder="Share your travel experience, discoveries, and moments..."
+                        required
+                    ></textarea>
+                </div>
 
-            <div>
-                <textarea
-                    id="content"
-                    name="content"
-                    rows="5"
-                    cols="50"
-                    placeholder="Share your travel experience..."
-                    required
-                ></textarea>
-            </div>
+                <div class="form-group location-dropdown">
+                    <label for="location_search">📍 Location</label>
+                    <input
+                        type="text"
+                        id="location_search"
+                        placeholder="Search for or create a location..."
+                        autocomplete="off"
+                    >
+                    <input
+                        type="hidden"
+                        id="location_id"
+                        name="location_id"
+                    >
+                    <div id="location_results"></div>
+                    <p id="selected_location"></p>
+                </div>
 
+                <div class="form-group">
+                    <label for="media">📸 Images or Videos (optional)</label>
+                    <input
+                        type="file"
+                        id="media"
+                        name="media"
+                        accept="image/*,video/*"
+                        multiple
+                    >
+                </div>
 
-            <div>
-                <label for="location_search">Location</label>
+                <button type="submit" style="width: 100%;">Post Experience</button>
 
-            <input
-                type="text"
-                id="location_search"
-                placeholder="Search for a location"
-                autocomplete="off"
-            >
-
-            <input
-                type="hidden"
-                id="location_id"
-                name="location_id"
-            >
-
-            <div id="location_results"></div>
-
-            <p id="selected_location"></p>
-
-            <label for="media">Image or video:</label>
-
-            <input
-                type="file"
-                id="media"
-                name="media"
-                accept="image/*,video/*"
-                multiple
-            >
-
-            <button type="submit">Post</button>
-
-        </form>
+            </form>
+        </div>
 
     {% endif %}
 
+    <h2>📝 Traveller Posts</h2>
 
-    <hr>
+    <div class="posts-section">
+        {% if posts %}
+            {% for post in posts %}
+                <article>
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <div>
+                            <h3 style="margin-top: 0; margin-bottom: 0.25rem;">
+                                <a href="{{ url_for('profiles.profile', username=post.author.username) }}">
+                                    👤 {{ post.author.username }}
+                                </a>
+                            </h3>
+                            <small style="color: #5A6C7D;">{{ post.created_at.strftime("%d %b %Y, %I:%M %p") }}</small>
+                        </div>
+                    </div>
 
+                    <div style="padding: 1rem 0; border-top: 1px solid #E0D5CC; border-bottom: 1px solid #E0D5CC; margin: 1rem 0;">
+                        <a href="{{ url_for('posts.post_detail', post_id=post.id) }}" style="text-decoration: none; color: inherit;">
+                            <p style="margin: 0; line-height: 1.8;">{{ post.content }}</p>
+                        </a>
+                    </div>
 
-    <h2>Traveller Posts</h2>
+                    <div style="margin: 1rem 0; padding: 0.75rem 1rem; background: #F5F3F0; border-radius: 8px; border-left: 3px solid #A8D8EA;">
+                        <strong style="color: #1B4D5C;">📍 Location:</strong>
+                        <a href="{{ url_for('locations.location_page', location_id=post.location.id) }}" style="margin-left: 0.5rem;">
+                            {{ post.location.name }}
+                        </a>
+                    </div>
 
-    {% if posts %}
-
-        {% for post in posts %}
-
-            <article>
-
-                <h3>
-                    <a href="{{ url_for('profiles.profile', username=post.author.username) }}">
-                        {{ post.author.username }}
-                    </a>
-
-                </h3>
-
-                <p>
-                    <a href="{{ url_for('posts.post_detail', post_id=post.id) }}">
-                        {{ post.content }}
-                    </a>
-                </p>
-
-                <p>
-                    <strong>Location:</strong>
-                    <a href="{{ url_for('locations.location_page', location_id=post.location.id) }}">
-                        {{ post.location.name }}
-                    </a>
-                </p>
-
-                {% for media in post.media %}
-
-                    {% if media.media_type == "image" %}
-
-                        <img
-                            src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
-                            alt="Image from {{ post.location.name }}"
-                            style="max-width: 500px;"
-                        >
-
-                    {% elif media.media_type == "video" %}
-
-                        <video
-                            controls
-                            style="max-width: 500px;"
-                        >
-                            <source
-                                src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
-                                type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}"
-                            >
-                            Your browser does not support video playback.
-                        </video>
-
+                    {% if post.media %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin: 1rem 0;">
+                            {% for media in post.media %}
+                                {% if media.media_type == "image" %}
+                                    <img
+                                        src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
+                                        alt="Image from {{ post.location.name }}"
+                                        style="width: 100%; height: 300px; object-fit: cover; border-radius: 8px;"
+                                    >
+                                {% elif media.media_type == "video" %}
+                                    <video
+                                        controls
+                                        style="width: 100%; border-radius: 8px;"
+                                    >
+                                        <source
+                                            src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
+                                            type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}"
+                                        >
+                                        Your browser does not support video playback.
+                                    </video>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
                     {% endif %}
 
-                {% endfor %}
-
-                <br>
-
-                <small>
-                    {{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}
-                </small>
-                <br>
-
-                {% if current_user.is_authenticated and post.user_id == current_user.id %}
-
-                    <a href="{{ url_for('posts.edit_post', post_id=post.id) }}">
-                        Edit
-                    </a>    
-
-                    <form
-                        action="{{ url_for('posts.delete_post', post_id=post.id) }}"
-                        method="POST"
-                    >
-
-                         {{ csrf_token() }}
-
-                        <button type="submit">Delete</button>
-                    </form>
-
-                {% endif %}
-
-            </article>
-
-            <hr>
-
-        {% endfor %}
-
-    {% else %}
-
-        <p>
-            No posts yet. Be the first traveller to share something!
-        </p>
-
-    {% endif %}
+                    {% if current_user.is_authenticated and post.user_id == current_user.id %}
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E0D5CC; display: flex; gap: 1rem;">
+                            <a href="{{ url_for('posts.edit_post', post_id=post.id) }}" style="padding: 0.5rem 1rem; background: #A8D8EA; color: white; border-radius: 6px; text-decoration: none; font-weight: 600;">
+                                ✏️ Edit
+                            </a>
+                            <form action="{{ url_for('posts.delete_post', post_id=post.id) }}" method="POST" style="display: inline;">
+                                {{ csrf_token() }}
+                                <button type="submit" style="padding: 0.5rem 1rem; background: #D97757; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                                    🗑️ Delete
+                                </button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 3rem 2rem; background: white; border-radius: 12px; border: 2px dashed #E0D5CC; margin-top: 2rem;">
+                <p style="font-size: 1.1rem; color: #5A6C7D;">
+                    ✨ No posts yet. Be the first traveller to share your experience!
+                </p>
+            </div>
+        {% endif %}
+    </div>
 
 
 
