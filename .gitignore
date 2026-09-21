@@ -5,3 +5,5 @@ instance/
 .env
 static/uploads/posts/*
 !static/uploads/posts/.gitkeep
+# Added by code-review-graph
+.code-review-graph/
