@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, abort, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 import requests
+import math
 from models import db, Country, Follow, Post, Location, LocationFollow, Like, Comment, User
 from forms import CreatePostForm
 from datetime import datetime, timedelta
@@ -14,6 +15,45 @@ from routes.api import calculate_distance
 
 
 locations = Blueprint("locations", __name__)
+
+
+def _spread_out_pins(pins, min_distance=13.0, iterations=40, bounds=(8.0, 92.0)):
+    """Nudge pins apart so geographically close locations don't render on
+    top of each other and become unclickable, while keeping them roughly
+    in their relative real-world positions."""
+
+    for _ in range(iterations):
+        moved = False
+
+        for i in range(len(pins)):
+            for j in range(i + 1, len(pins)):
+                dx = pins[j]["x_percent"] - pins[i]["x_percent"]
+                dy = pins[j]["y_percent"] - pins[i]["y_percent"]
+                distance = math.hypot(dx, dy)
+
+                if distance < min_distance:
+                    moved = True
+
+                    if distance == 0:
+                        dx, dy, distance = 1.0, 0.0, 1.0
+
+                    push = (min_distance - distance) / 2
+                    unit_x, unit_y = dx / distance, dy / distance
+
+                    pins[i]["x_percent"] -= unit_x * push
+                    pins[i]["y_percent"] -= unit_y * push
+                    pins[j]["x_percent"] += unit_x * push
+                    pins[j]["y_percent"] += unit_y * push
+
+        if not moved:
+            break
+
+    low, high = bounds
+    for pin in pins:
+        pin["x_percent"] = round(min(high, max(low, pin["x_percent"])), 2)
+        pin["y_percent"] = round(min(high, max(low, pin["y_percent"])), 2)
+
+    return pins
 
 
 def _build_discovery_context():
@@ -116,6 +156,46 @@ def _build_discovery_context():
     enriched_trending = enrich_locations(trending_locations)
     enriched_recently_active = enrich_locations(recently_active_locations)
 
+    map_pins = []
+
+    if trending_locations:
+
+        latitudes = [location.latitude for location in trending_locations]
+        longitudes = [location.longitude for location in trending_locations]
+
+        lat_span = (max(latitudes) - min(latitudes)) or 1
+        lon_span = (max(longitudes) - min(longitudes)) or 1
+
+        for entry in enriched_trending:
+
+            location = entry["location"]
+
+            if len(trending_locations) == 1:
+                x_percent = 50.0
+                y_percent = 50.0
+            else:
+                x_percent = 12 + ((location.longitude - min(longitudes)) / lon_span) * 76
+                y_percent = 12 + ((max(latitudes) - location.latitude) / lat_span) * 76
+
+            map_pins.append({
+                "id": location.id,
+                "name": location.name,
+                "type": location.type,
+                "city": location.city,
+                "country": location.country,
+                "is_verified": location.is_verified,
+                "emoji": entry["emoji"],
+                "hero_image": entry["hero_image"],
+                "rating": entry["rating"],
+                "active_nomads": entry["active_nomads"],
+                "post_count": entry["post_count"],
+                "description": entry["description"],
+                "x_percent": round(x_percent, 2),
+                "y_percent": round(y_percent, 2),
+            })
+
+        map_pins = _spread_out_pins(map_pins)
+
     pinned_locations = []
 
     if current_user.is_authenticated:
@@ -138,6 +218,7 @@ def _build_discovery_context():
         "locations": all_locations,
         "recently_active_locations": enriched_recently_active,
         "trending_locations": enriched_trending,
+        "map_pins": map_pins,
         "pinned_locations": pinned_locations,
         "now": datetime.utcnow(),
     }
@@ -146,66 +227,67 @@ def _build_discovery_context():
 @locations.route("/")
 def home():
 
-    posts = Post.query.order_by(
-        Post.created_at.desc()
-    ).limit(60).all()
-
     form = CreatePostForm()
 
-    return render_template(
-        "locations/home.html",
-        posts=posts,
-        form=form,
-        active_tab="explore",
-        is_for_you=False,
-        **_build_discovery_context()
-    )
+    personalized_posts = []
 
+    if current_user.is_authenticated:
+        followed_location_ids = [
+            follow.location_id
+            for follow in LocationFollow.query.filter_by(
+                user_id=current_user.id
+            ).all()
+        ]
 
-@locations.route("/for-you")
-@login_required
-def for_you():
+        followed_user_ids = [
+            follow.followed_id
+            for follow in Follow.query.filter_by(
+                follower_id=current_user.id
+            ).all()
+        ]
 
-    followed_location_ids = [
-        follow.location_id
-        for follow in LocationFollow.query.filter_by(
-            user_id=current_user.id
-        ).all()
-    ]
-
-    followed_user_ids = [
-        follow.followed_id
-        for follow in Follow.query.filter_by(
-            follower_id=current_user.id
-        ).all()
-    ]
-
-    if followed_location_ids or followed_user_ids:
-
-        posts = (
-            Post.query
-            .filter(
-                db.or_(
-                    Post.location_id.in_(followed_location_ids),
-                    Post.user_id.in_(followed_user_ids)
+        if followed_location_ids or followed_user_ids:
+            personalized_posts = (
+                Post.query
+                .filter(
+                    db.or_(
+                        Post.location_id.in_(followed_location_ids),
+                        Post.user_id.in_(followed_user_ids)
+                    )
                 )
+                .order_by(Post.created_at.desc())
+                .limit(20)
+                .all()
             )
-            .order_by(Post.created_at.desc())
-            .all()
-        )
 
-    else:
+    personalized_post_ids = {post.id for post in personalized_posts}
 
-        posts = []
+    candidate_posts = (
+        Post.query
+        .filter(~Post.id.in_(personalized_post_ids))
+        if personalized_post_ids
+        else Post.query
+    ).order_by(Post.created_at.desc()).limit(100).all()
 
-    form = CreatePostForm()
+    discovery_posts = sorted(
+        candidate_posts,
+        key=lambda post: (
+            len(post.likes) * 2 + len(post.comments) * 3,
+            post.created_at
+        ),
+        reverse=True
+    )[:30]
+
+    # Posts list kept for template blocks (map pins, etc.) that just need
+    # something to preview - personalized takes priority, else discovery.
+    posts = personalized_posts if personalized_posts else discovery_posts
 
     return render_template(
         "locations/home.html",
         posts=posts,
+        personalized_posts=personalized_posts,
+        discovery_posts=discovery_posts,
         form=form,
-        active_tab="foryou",
-        is_for_you=True,
         **_build_discovery_context()
     )
 

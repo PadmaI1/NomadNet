@@ -95,9 +95,6 @@
 <nav aria-label="Main Navigation" class="hidden md:flex items-center gap-1.5 bg-sage-100/70 p-1.5 rounded-full border border-sage-200/60">
 <a class="px-5 py-2 text-sm font-semibold rounded-full text-slate-600 hover:text-pine hover:bg-white/80 transition" href="{{ url_for('locations.home') }}">Explore</a>
 <a class="px-5 py-2 text-sm font-semibold rounded-full bg-pine text-white shadow-sm transition" href="{{ url_for('locations.search_locations') }}">Locations</a>
-{% if current_user.is_authenticated %}
-<a class="px-5 py-2 text-sm font-semibold rounded-full text-slate-600 hover:text-pine hover:bg-white/80 transition" href="{{ url_for('locations.for_you') }}">For You</a>
-{% endif %}
 </nav>
 </div>
 <div class="flex items-center gap-3">

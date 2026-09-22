@@ -88,11 +88,7 @@
             </a>
         </div>
         <nav class="hidden lg:flex items-center gap-1 p-1 bg-surface-container-low rounded-full">
-            <a {% if active_tab == 'explore' %}aria-current="page" class="px-4 py-2 transition-colors bg-primary-container text-on-primary font-semibold rounded-full"{% else %}class="px-4 py-2 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors"{% endif %} href="{{ url_for('locations.home') }}">Explore</a>
-            {% if current_user.is_authenticated %}
-            <a {% if active_tab == 'foryou' %}aria-current="page" class="px-4 py-2 transition-colors bg-primary-container text-on-primary font-semibold rounded-full"{% else %}class="px-4 py-2 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors"{% endif %} href="{{ url_for('locations.for_you') }}">For You</a>
-            {% endif %}
-            <a class="px-4 py-2 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors" href="{{ url_for('locations.search_locations') }}">Location Search</a>
+            <a aria-current="page" class="px-4 py-2 transition-colors bg-primary-container text-on-primary font-semibold rounded-full" href="{{ url_for('locations.home') }}">Home</a>
             {% if current_user.is_authenticated %}
             <a class="px-4 py-2 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors" href="{{ url_for('profiles.profile', username=current_user.username) }}">Profile</a>
             {% endif %}
@@ -130,7 +126,7 @@
 
 {% with messages = get_flashed_messages() %}
 {% if messages %}
-<div class="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin pt-space-lg">
+<div class="relative z-40 max-w-[1440px] mx-auto px-margin-mobile lg:px-margin pt-space-lg">
     {% for message in messages %}
     <div class="flex items-center gap-3 px-5 py-4 rounded-xl bg-secondary-container/20 border border-secondary-container text-on-surface font-body-md text-body-md mb-3">
         <span class="material-symbols-outlined text-secondary text-[20px]">info</span>

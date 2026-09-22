@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import avatar, time_ago, media_url with context %}
 
-{% block title %}NomadNet — {{ 'For You' if is_for_you else 'Explore the World Through Places' }}{% endblock %}
+{% block title %}NomadNet — Explore the World Through Places{% endblock %}
 
 {% block content %}
 
@@ -26,6 +26,101 @@
         <span class="font-label-sm text-label-sm text-on-primary/70 truncate">{{ item.location.country }}</span>
     </div>
 </button>
+{% endmacro %}
+
+{% macro post_card(post) %}
+<article class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-5 hover:shadow-md transition-shadow">
+    <div class="flex items-start justify-between gap-4">
+        {% if post.location %}
+        <a class="flex items-start gap-3 group" href="{{ url_for('locations.location_page', location_id=post.location.id) }}">
+            <div class="w-10 h-10 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform text-[20px]">
+                {{ post.location.emoji or '📍' }}
+            </div>
+            <div class="flex flex-col">
+                <span class="font-headline-md text-headline-md text-primary font-bold group-hover:text-secondary transition-colors leading-tight">
+                    {{ post.location.name }}{% if post.location.city %}, {{ post.location.city }}{% endif %}
+                </span>
+                <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-2 mt-0.5">
+                    <span>{{ post.location.country }}</span>
+                    {% if post.location.is_verified %}<span>·</span><span class="text-surface-tint font-semibold">Verified Place</span>{% endif %}
+                </span>
+            </div>
+        </a>
+        <form method="POST" action="{{ url_for('locations.follow_location', location_id=post.location.id) }}" class="shrink-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-label-sm transition-colors" type="submit">
+                <span class="material-symbols-outlined text-[16px]">bookmark_border</span>
+                <span>Save Place</span>
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    <a href="{{ url_for('posts.post_detail', post_id=post.id) }}" class="no-underline text-inherit">
+        <p class="font-body-lg text-body-lg text-on-surface leading-relaxed m-0">{{ post.content }}</p>
+    </a>
+    {% if post.media %}
+    {% if post.media|length > 1 %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-xl overflow-hidden">
+        {% for media in post.media[:2] %}
+        {% if media.media_type == "image" %}
+        <img src="{{ media_url(media.filename) }}" alt="Image from {{ post.location.name if post.location else 'a post' }}" class="h-64 w-full object-cover rounded-lg">
+        {% elif media.media_type == "video" %}
+        <video controls class="h-64 w-full object-cover rounded-lg">
+            <source src="{{ media_url(media.filename) }}" type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}">
+            Your browser does not support video playback.
+        </video>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% else %}
+    {% set media = post.media[0] %}
+    <div class="w-full rounded-xl overflow-hidden">
+        {% if media.media_type == "image" %}
+        <img src="{{ media_url(media.filename) }}" alt="Image from {{ post.location.name if post.location else 'a post' }}" class="w-full h-80 object-cover">
+        {% elif media.media_type == "video" %}
+        <video controls class="w-full">
+            <source src="{{ media_url(media.filename) }}" type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}">
+            Your browser does not support video playback.
+        </video>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+    <div class="pt-3 border-t border-surface-container-high flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            {{ avatar(post.author, 'w-8 h-8') }}
+            <div class="flex flex-col">
+                <a href="{{ url_for('profiles.profile', username=post.author.username) }}" class="font-label-md text-label-md text-on-surface font-medium no-underline hover:underline">Shared by @{{ post.author.username }}</a>
+                <span class="font-label-sm text-label-sm text-on-surface-variant">{{ time_ago(post.created_at) }}</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-4 text-on-surface-variant">
+            <span class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">favorite</span>
+                <span class="font-label-md text-label-md">{{ post.likes|length }}</span>
+            </span>
+            <span class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px]">chat_bubble</span>
+                <span class="font-label-md text-label-md">{{ post.comments|length }} comments</span>
+            </span>
+        </div>
+    </div>
+    {% if current_user.is_authenticated and post.user_id == current_user.id %}
+    <div class="pt-3 border-t border-surface-container-high flex items-center gap-3">
+        <a href="{{ url_for('posts.edit_post', post_id=post.id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-label-sm transition-colors">
+            <span class="material-symbols-outlined text-[16px]">edit</span>
+            Edit
+        </a>
+        <form action="{{ url_for('posts.delete_post', post_id=post.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-error-container hover:bg-error/20 text-error font-label-sm text-label-sm transition-colors">
+                <span class="material-symbols-outlined text-[16px]">delete</span>
+                Delete
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</article>
 {% endmacro %}
 
 <div class="flex flex-col w-full">
@@ -139,20 +234,27 @@
     </div>
 </section>
 
+<!-- ================= NEAR ME ================= -->
+<section class="max-w-[1440px] mx-auto w-full px-margin-mobile lg:px-margin pt-16 lg:pt-24">
+    <div class="mb-5">
+        <span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest font-bold">Right Where You Are</span>
+        <h2 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mt-1">Find Places Near You</h2>
+    </div>
+    <button type="button" id="near_me_button" data-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}" data-login-url="{{ url_for('auth.login') }}" class="px-4 py-2 rounded-full bg-secondary text-on-secondary font-label-md text-label-md flex items-center gap-1.5 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed w-fit">
+        <span class="material-symbols-outlined text-[16px]">near_me</span>
+        <span id="near_me_button_label">Near Me</span>
+    </button>
+    <div id="near_me_results" class="hidden mt-4">
+        <p id="near_me_status" class="font-label-md text-label-md text-primary mb-2"></p>
+        <div id="nearby_locations" class="flex flex-col gap-2"></div>
+    </div>
+</section>
+
 <!-- ================= MAP / SPATIAL RADAR ================= -->
 <section class="max-w-[1440px] mx-auto w-full px-margin-mobile lg:px-margin py-16 lg:py-24">
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-        <div>
-            <span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest font-bold">Interactive Spatial Radar</span>
-            <h2 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mt-1">Explore Nearby &amp; Distant Havens</h2>
-        </div>
-        <div class="flex items-center gap-2">
-            <button type="button" id="near_me_button" class="px-4 py-2 rounded-full bg-secondary text-on-secondary font-label-md text-label-md flex items-center gap-1.5 shadow-sm">
-                <span class="material-symbols-outlined text-[16px]">near_me</span>
-                Near Me
-            </button>
-            <a href="{{ url_for('locations.search_locations') }}" class="px-4 py-2 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors">Global Satellites</a>
-        </div>
+    <div class="mb-8">
+        <span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest font-bold">This Week's Trending Places</span>
+        <h2 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mt-1">Explore Nearby &amp; Distant Havens</h2>
     </div>
     <div class="w-full rounded-2xl overflow-hidden bg-surface-container-lowest shadow-xl grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
         <!-- Left: stylized map + search -->
@@ -173,108 +275,88 @@
                     <span class="material-symbols-outlined text-secondary text-[22px]">search</span>
                     <input name="q" class="w-full bg-transparent font-body-md text-body-md focus:outline-none placeholder:text-on-surface-variant/70 text-on-surface" placeholder="Search Bangkok, Kyoto, Bali, or a place name..." type="text">
                     <button aria-label="Search" class="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-colors" type="submit">
-                        <span class="material-symbols-outlined text-[18px]">tune</span>
+                        <span class="material-symbols-outlined text-[18px]">search</span>
                     </button>
                 </div>
             </form>
-            <div class="relative z-10 my-8 w-full h-[320px]">
-                {% set pin_posts = posts[:2] %}
-                {% if pin_posts|length > 0 %}
-                <div class="absolute top-12 left-16 group cursor-pointer">
-                    <div class="relative flex items-center gap-2 p-1.5 pr-3 rounded-full bg-surface shadow-md hover:scale-105 transition-transform">
-                        {{ avatar(pin_posts[0].author, 'w-7 h-7') }}
-                        <div class="flex flex-col">
-                            <span class="font-label-sm text-label-sm font-bold text-primary leading-tight">{{ pin_posts[0].location.name if pin_posts[0].location else 'Post' }}</span>
-                            <span class="font-label-sm text-[10px] text-on-surface-variant">by @{{ pin_posts[0].author.username }}</span>
-                        </div>
+            <div class="relative z-10 my-8 w-full h-[320px]" id="map_pins_layer">
+                {% for pin in map_pins %}
+                <button type="button"
+                    class="map-pin absolute -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer group"
+                    style="top: {{ pin.y_percent }}%; left: {{ pin.x_percent }}%;"
+                    data-index="{{ loop.index0 }}"
+                    title="{{ pin.name }}, {{ pin.country }}">
+                    <div class="pin-badge w-11 h-11 rounded-full bg-surface shadow-md flex items-center justify-center text-xl border-2 border-transparent transition-all group-hover:scale-110">
+                        <span>{{ pin.emoji or '📍' }}</span>
                     </div>
-                    <div class="w-2 h-2 bg-surface rotate-45 mx-auto -mt-1 shadow-sm"></div>
-                </div>
-                {% endif %}
-                {% if trending_locations|length > 0 %}
-                <div class="absolute bottom-16 right-16 group cursor-pointer">
-                    <div class="relative flex flex-col p-2.5 rounded-xl bg-primary text-on-primary shadow-xl hover:scale-105 transition-transform min-w-[150px]">
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="font-label-sm text-label-sm font-bold text-secondary-container">{{ trending_locations[0].location.name }}</span>
-                            <span class="px-1.5 py-0.5 rounded bg-surface/20 text-[10px] font-semibold">Active</span>
-                        </div>
-                        <span class="font-body-sm text-[11px] text-on-primary/80 mt-0.5">{{ trending_locations[0].active_nomads }} fellow nomads here</span>
-                    </div>
-                    <div class="w-2.5 h-2.5 bg-primary rotate-45 mx-auto -mt-1"></div>
+                    <div class="w-2 h-2 bg-surface rotate-45 -mt-1 shadow-sm"></div>
+                    <span class="mt-1 px-2 py-0.5 rounded-full bg-surface/95 shadow text-[10px] font-label-sm font-bold text-primary whitespace-nowrap max-w-[110px] truncate">{{ pin.name }}</span>
+                </button>
+                {% endfor %}
+                {% if not map_pins %}
+                <div class="absolute inset-0 flex items-center justify-center text-center px-8">
+                    <p class="font-body-sm text-body-sm text-on-surface-variant">No trending places yet — follow or post about a place to see it here.</p>
                 </div>
                 {% endif %}
             </div>
             <div class="relative z-10 flex items-center justify-between bg-surface/80 backdrop-blur-md px-4 py-2.5 rounded-xl">
                 <span class="font-label-sm text-label-sm text-primary flex items-center gap-1.5 font-medium">
                     <span class="w-2 h-2 rounded-full bg-secondary"></span>
-                    Displaying {{ locations|length }} verified places across the network
+                    {% if map_pins %}Tap a pin to preview one of this week's {{ map_pins|length }} trending places{% else %}No trending places to show yet{% endif %}
                 </span>
             </div>
         </div>
-        <!-- Right: featured location panorama -->
-        {% set feature = trending_locations[0] if trending_locations else None %}
-        <div class="lg:col-span-6 relative bg-cover bg-center flex flex-col justify-between p-6 lg:p-8 min-h-[460px] text-on-primary overflow-hidden" style="{% if feature and feature.hero_image %}background-image: url('{{ feature.hero_image }}'){% else %}background-color: #012d1d{% endif %}">
+        <!-- Right: selected location panorama, driven by the pin picked on the left -->
+        <div class="lg:col-span-6 relative bg-cover bg-center flex flex-col justify-between p-6 lg:p-8 min-h-[460px] text-on-primary overflow-hidden" id="map_feature_panel" style="{% if map_pins and map_pins[0].hero_image %}background-image: url('{{ map_pins[0].hero_image }}'){% else %}background-color: #012d1d{% endif %}">
             <div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent"></div>
-            {% if feature %}
+            {% if map_pins %}
+            {% set feature = map_pins[0] %}
             <div class="relative z-10 flex items-center justify-between gap-4">
                 <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface/20 backdrop-blur-md font-label-sm text-label-sm">
                     <span class="material-symbols-outlined text-[16px] text-secondary-fixed">place</span>
-                    <span>{{ feature.location.name }}, {{ feature.location.country }}</span>
+                    <span id="map_feature_location">{{ feature.name }}, {{ feature.country }}</span>
                 </div>
-                <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-secondary text-on-secondary font-label-md text-label-md shadow-md">
+                <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-secondary text-on-secondary font-label-md text-label-md shadow-md" id="map_feature_rating_badge" style="{{ '' if feature.post_count else 'display:none' }}">
                     <span class="material-symbols-outlined text-[14px]">star</span>
-                    <span>{{ feature.rating }}</span>
+                    <span id="map_feature_rating">{{ feature.rating }}</span>
                 </div>
             </div>
-            <div class="relative z-10 my-auto h-48 w-full pointer-events-none">
-                {% for post in posts if post.location_id == feature.location.id %}
-                {% if loop.index0 < 2 %}
-                <div class="absolute {{ 'top-2 left-1/4' if loop.index0 == 0 else 'bottom-4 right-1/4' }} pointer-events-auto flex flex-col items-center group cursor-pointer">
-                    <div class="p-1 rounded-full bg-surface shadow-lg hover:scale-110 transition-transform">
-                        {{ avatar(post.author, 'w-9 h-9') }}
-                    </div>
-                    <span class="mt-1 px-2 py-0.5 rounded-full bg-primary/80 backdrop-blur-sm text-[10px] font-label-sm text-on-primary font-medium">{{ post.author.username }}</span>
-                </div>
-                {% endif %}
-                {% endfor %}
-            </div>
+            <div class="relative z-10 my-auto"></div>
             <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-surface/20 backdrop-blur-lg">
                 <div>
                     <span class="font-label-sm text-label-sm text-secondary-fixed uppercase tracking-wider">Place Hub</span>
-                    <h3 class="font-headline-sm text-headline-sm font-bold text-on-primary mt-0.5">{{ feature.location.name }}</h3>
-                    <p class="font-body-sm text-body-sm text-on-primary/80">{{ feature.active_nomads }} nomads following this place</p>
+                    <h3 class="font-headline-sm text-headline-sm font-bold text-on-primary mt-0.5" id="map_feature_name">{{ feature.name }}</h3>
+                    <p class="font-body-sm text-body-sm text-on-primary/80" id="map_feature_active_nomads">{{ feature.active_nomads }} nomads following this place</p>
                 </div>
                 <div class="flex items-center gap-2.5">
                     {% if current_user.is_authenticated %}
-                    <form method="POST" action="{{ url_for('locations.follow_location', location_id=feature.location.id) }}">
+                    <form method="POST" id="map_feature_follow_form" action="{{ url_for('locations.follow_location', location_id=feature.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="px-4 py-2.5 rounded-full bg-surface text-primary hover:bg-surface-container font-label-md text-label-md transition-colors shadow-sm" type="submit">Follow Place</button>
                     </form>
                     {% endif %}
-                    <a class="px-4 py-2.5 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md transition-colors shadow-sm flex items-center gap-1.5" href="{{ url_for('locations.location_page', location_id=feature.location.id) }}">
+                    <a class="px-4 py-2.5 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md transition-colors shadow-sm flex items-center gap-1.5" href="{{ url_for('locations.location_page', location_id=feature.id) }}" id="map_feature_view_hub">
                         <span>View Hub</span>
                         <span class="material-symbols-outlined text-[16px]">open_in_new</span>
                     </a>
                 </div>
             </div>
+            {% else %}
+            <div class="relative z-10 h-full flex flex-col items-center justify-center text-center gap-3">
+                <span class="material-symbols-outlined text-[48px] text-on-primary/50">explore_off</span>
+                <p class="font-body-md text-body-md text-on-primary/80 max-w-xs">No trending places yet this week.</p>
+            </div>
             {% endif %}
         </div>
     </div>
-    <p id="near_me_status" class="font-label-md text-label-md text-primary mt-4"></p>
-    <div id="nearby_locations" class="mt-2 flex flex-col gap-2"></div>
 </section>
 
 <!-- ================= FEED ================= -->
 <section class="max-w-[1440px] mx-auto w-full px-margin-mobile lg:px-margin pb-24">
     <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-surface-container-high">
         <div>
-            {% if is_for_you %}
-            <span class="font-label-sm text-label-sm text-surface-tint uppercase tracking-widest font-bold">Your Places, Your People</span>
-            <h2 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mt-1">For You — Posts From Places &amp; People You Follow</h2>
-            {% else %}
-            <span class="font-label-sm text-label-sm text-surface-tint uppercase tracking-widest font-bold">Unfiltered Posts</span>
-            <h2 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mt-1">Explore — Collective Posts From Every Corner</h2>
-            {% endif %}
+            <span class="font-label-sm text-label-sm text-surface-tint uppercase tracking-widest font-bold">Your Feed</span>
+            <h2 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mt-1">What's Happening, Curated For You</h2>
         </div>
     </div>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
@@ -314,114 +396,42 @@
             </div>
             {% endif %}
 
-            {% if is_for_you and not posts %}
-            <div class="p-10 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col items-center text-center gap-3">
-                <span class="material-symbols-outlined text-primary text-[32px]">explore_off</span>
-                <h3 class="font-headline-sm text-headline-sm text-primary font-bold">Nothing here yet</h3>
-                <p class="font-body-md text-body-md text-on-surface-variant max-w-md">Follow a place or a fellow nomad and their posts will start showing up here.</p>
-                <a href="{{ url_for('locations.home') }}" class="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-on-primary font-label-lg text-label-lg hover:bg-primary-container transition-all">Go to Explore</a>
-            </div>
-            {% endif %}
-            {% for post in posts[:10] %}
-            <article class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-5 hover:shadow-md transition-shadow">
-                <div class="flex items-start justify-between gap-4">
-                    {% if post.location %}
-                    <a class="flex items-start gap-3 group" href="{{ url_for('locations.location_page', location_id=post.location.id) }}">
-                        <div class="w-10 h-10 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center shrink-0 mt-0.5 group-hover:scale-105 transition-transform text-[20px]">
-                            {{ post.location.emoji or '📍' }}
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="font-headline-md text-headline-md text-primary font-bold group-hover:text-secondary transition-colors leading-tight">
-                                {{ post.location.name }}{% if post.location.city %}, {{ post.location.city }}{% endif %}
-                            </span>
-                            <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-2 mt-0.5">
-                                <span>{{ post.location.country }}</span>
-                                {% if post.location.is_verified %}<span>·</span><span class="text-surface-tint font-semibold">Verified Place</span>{% endif %}
-                            </span>
-                        </div>
-                    </a>
-                    <form method="POST" action="{{ url_for('locations.follow_location', location_id=post.location.id) }}" class="shrink-0">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-label-sm transition-colors" type="submit">
-                            <span class="material-symbols-outlined text-[16px]">bookmark_border</span>
-                            <span>Save Place</span>
-                        </button>
-                    </form>
-                    {% endif %}
+            {% if personalized_posts %}
+            <div class="flex flex-col gap-6">
+                <div>
+                    <span class="font-label-sm text-label-sm text-surface-tint uppercase tracking-widest font-bold">Your Places, Your People</span>
+                    <h3 class="font-headline-lg text-headline-lg text-primary font-bold tracking-tight mt-1">For You</h3>
                 </div>
-                <a href="{{ url_for('posts.post_detail', post_id=post.id) }}" class="no-underline text-inherit">
-                    <p class="font-body-lg text-body-lg text-on-surface leading-relaxed m-0">{{ post.content }}</p>
-                </a>
-                {% if post.media %}
-                {% if post.media|length > 1 %}
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-xl overflow-hidden">
-                    {% for media in post.media[:2] %}
-                    {% if media.media_type == "image" %}
-                    <img src="{{ media_url(media.filename) }}" alt="Image from {{ post.location.name if post.location else 'a post' }}" class="h-64 w-full object-cover rounded-lg">
-                    {% elif media.media_type == "video" %}
-                    <video controls class="h-64 w-full object-cover rounded-lg">
-                        <source src="{{ media_url(media.filename) }}" type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}">
-                        Your browser does not support video playback.
-                    </video>
-                    {% endif %}
+                <div class="flex flex-col gap-8">
+                    {% for post in personalized_posts[:10] %}
+                    {{ post_card(post) }}
                     {% endfor %}
                 </div>
-                {% else %}
-                {% set media = post.media[0] %}
-                <div class="w-full rounded-xl overflow-hidden">
-                    {% if media.media_type == "image" %}
-                    <img src="{{ media_url(media.filename) }}" alt="Image from {{ post.location.name if post.location else 'a post' }}" class="w-full h-80 object-cover">
-                    {% elif media.media_type == "video" %}
-                    <video controls class="w-full">
-                        <source src="{{ media_url(media.filename) }}" type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}">
-                        Your browser does not support video playback.
-                    </video>
-                    {% endif %}
+            </div>
+            {% elif current_user.is_authenticated %}
+            <div class="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex items-center gap-4">
+                <span class="material-symbols-outlined text-primary text-[28px]">explore_off</span>
+                <p class="font-body-md text-body-md text-on-surface-variant m-0">Follow a place or a fellow nomad to get a personalized "For You" section here. Meanwhile, here's what's trending:</p>
+            </div>
+            {% endif %}
+
+            {% if discovery_posts %}
+            <div class="flex flex-col gap-6">
+                <div>
+                    <span class="font-label-sm text-label-sm text-surface-tint uppercase tracking-widest font-bold">Discover</span>
+                    <h3 class="font-headline-lg text-headline-lg text-primary font-bold tracking-tight mt-1">Trending Across NomadNet</h3>
                 </div>
-                {% endif %}
-                {% endif %}
-                <div class="pt-3 border-t border-surface-container-high flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        {{ avatar(post.author, 'w-8 h-8') }}
-                        <div class="flex flex-col">
-                            <a href="{{ url_for('profiles.profile', username=post.author.username) }}" class="font-label-md text-label-md text-on-surface font-medium no-underline hover:underline">Shared by @{{ post.author.username }}</a>
-                            <span class="font-label-sm text-label-sm text-on-surface-variant">{{ time_ago(post.created_at) }}</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-4 text-on-surface-variant">
-                        <span class="flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-[18px]">favorite</span>
-                            <span class="font-label-md text-label-md">{{ post.likes|length }}</span>
-                        </span>
-                        <span class="flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-[18px]">chat_bubble</span>
-                            <span class="font-label-md text-label-md">{{ post.comments|length }} comments</span>
-                        </span>
-                    </div>
+                <div class="flex flex-col gap-8">
+                    {% for post in discovery_posts %}
+                    {{ post_card(post) }}
+                    {% endfor %}
                 </div>
-                {% if current_user.is_authenticated and post.user_id == current_user.id %}
-                <div class="pt-3 border-t border-surface-container-high flex items-center gap-3">
-                    <a href="{{ url_for('posts.edit_post', post_id=post.id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-label-sm transition-colors">
-                        <span class="material-symbols-outlined text-[16px]">edit</span>
-                        Edit
-                    </a>
-                    <form action="{{ url_for('posts.delete_post', post_id=post.id) }}" method="POST">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-error-container hover:bg-error/20 text-error font-label-sm text-label-sm transition-colors">
-                            <span class="material-symbols-outlined text-[16px]">delete</span>
-                            Delete
-                        </button>
-                    </form>
-                </div>
-                {% endif %}
-            </article>
-            {% else %}
-            {% if not is_for_you %}
+            </div>
+            {% elif not personalized_posts %}
             <div class="p-10 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col items-center text-center gap-3">
                 <p class="font-body-md text-body-md text-on-surface-variant m-0">✨ No posts yet. Be the first traveller to share your experience!</p>
             </div>
             {% endif %}
-            {% endfor %}
         </div>
 
         <!-- Right sidebar -->
@@ -474,6 +484,67 @@
 
 {% block scripts %}
 <script>
+const MAP_PINS = {{ map_pins | tojson }};
+
+function selectMapPin(index) {
+    const pin = MAP_PINS[index];
+    if (!pin) return;
+
+    const panel = document.querySelector("#map_feature_panel");
+    if (panel) {
+        panel.style.backgroundImage = pin.hero_image ? `url('${pin.hero_image}')` : "";
+        panel.style.backgroundColor = pin.hero_image ? "" : "#012d1d";
+    }
+
+    const locationEl = document.querySelector("#map_feature_location");
+    if (locationEl) locationEl.textContent = `${pin.name}, ${pin.country}`;
+
+    const ratingBadge = document.querySelector("#map_feature_rating_badge");
+    const ratingEl = document.querySelector("#map_feature_rating");
+    if (ratingBadge && ratingEl) {
+        if (pin.post_count > 0) {
+            ratingBadge.style.display = "";
+            ratingEl.textContent = pin.rating;
+        } else {
+            ratingBadge.style.display = "none";
+        }
+    }
+
+    const nameEl = document.querySelector("#map_feature_name");
+    if (nameEl) nameEl.textContent = pin.name;
+
+    const activeNomadsEl = document.querySelector("#map_feature_active_nomads");
+    if (activeNomadsEl) activeNomadsEl.textContent = `${pin.active_nomads} nomads following this place`;
+
+    const followForm = document.querySelector("#map_feature_follow_form");
+    if (followForm) followForm.action = `/location/${pin.id}/follow`;
+
+    const hubLink = document.querySelector("#map_feature_view_hub");
+    if (hubLink) hubLink.href = `/location/${pin.id}`;
+
+    document.querySelectorAll("#map_pins_layer .map-pin").forEach(function(el) {
+        const isActive = Number(el.dataset.index) === index;
+        el.classList.toggle("ring-2", isActive);
+        el.classList.toggle("ring-secondary", isActive);
+        el.querySelector(".pin-badge").classList.toggle("border-secondary", isActive);
+        el.querySelector(".pin-badge").classList.toggle("scale-110", isActive);
+    });
+}
+
+document.querySelectorAll("#map_pins_layer .map-pin").forEach(function(el) {
+    el.addEventListener("click", function() {
+        selectMapPin(Number(el.dataset.index));
+    });
+});
+
+if (MAP_PINS.length) {
+    document.querySelectorAll("#map_pins_layer .map-pin").forEach(function(el) {
+        if (Number(el.dataset.index) === 0) {
+            el.querySelector(".pin-badge").classList.add("border-secondary", "scale-110");
+        }
+    });
+}
+
 (function() {
     const track = document.getElementById('destination-track');
     const prevBtn = document.getElementById('carousel-prev');
@@ -650,64 +721,95 @@ if (locationSearchEl) {
 
 const nearMeButton = document.querySelector("#near_me_button");
 if (nearMeButton) {
+    const nearMeButtonLabel = document.querySelector("#near_me_button_label");
+    const nearMeResults = document.querySelector("#near_me_results");
     const nearMeStatus = document.querySelector("#near_me_status");
     const nearbyLocations = document.querySelector("#nearby_locations");
 
+    function setStatus(message) {
+        nearMeStatus.textContent = message;
+        nearMeResults.classList.remove("hidden");
+    }
+
     nearMeButton.addEventListener("click", function() {
-        nearMeStatus.textContent = "Getting your location...";
+
+        if (nearMeButton.dataset.authenticated !== "true") {
+            window.location.href = nearMeButton.dataset.loginUrl;
+            return;
+        }
+
+        if (!navigator.geolocation) {
+            setStatus("Geolocation is not supported by your browser.");
+            return;
+        }
+
+        nearMeButton.disabled = true;
+        nearMeButtonLabel.textContent = "Locating...";
+        nearbyLocations.innerHTML = "";
+        setStatus("Getting your location...");
 
         navigator.geolocation.getCurrentPosition(
             async function(position) {
                 const latitude = position.coords.latitude;
                 const longitude = position.coords.longitude;
 
-                nearMeStatus.textContent = "Finding locations near you...";
+                setStatus("Finding locations near you...");
 
-                const response = await fetch(`/api/locations/nearby?latitude=${latitude}&longitude=${longitude}`);
-                const data = await response.json();
+                try {
+                    const response = await fetch(`/api/locations/nearby?latitude=${latitude}&longitude=${longitude}`);
+                    const data = await response.json();
 
-                nearbyLocations.innerHTML = "";
+                    nearbyLocations.innerHTML = "";
 
-                if (data.locations.length === 0) {
-                    nearbyLocations.textContent = "No locations found nearby.";
-                    return;
-                }
-
-                data.locations.forEach(function(location) {
-                    const container = document.createElement("div");
-                    container.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-lowest shadow-sm font-body-sm text-body-sm text-on-surface";
-
-                    const name = document.createElement("strong");
-                    name.className = "text-primary";
-                    name.textContent = location.name;
-
-                    const info = document.createElement("span");
-                    info.className = "text-on-surface-variant";
-                    info.textContent = ` — ${location.distance} km away — ${location.post_count} posts `;
-
-                    container.appendChild(name);
-                    container.appendChild(info);
-
-                    if (location.post_count > 0) {
-                        const link = document.createElement("a");
-                        link.href = `/location/${location.id}`;
-                        link.className = "text-secondary font-semibold hover:underline";
-                        link.textContent = "Explore posts →";
-                        container.appendChild(link);
-                    } else {
-                        const emptyMessage = document.createElement("span");
-                        emptyMessage.className = "text-on-surface-variant";
-                        emptyMessage.textContent = " No posts yet.";
-                        container.appendChild(emptyMessage);
+                    if (!data.locations || data.locations.length === 0) {
+                        setStatus("No locations found nearby.");
+                        return;
                     }
 
-                    nearbyLocations.appendChild(container);
-                });
+                    data.locations.forEach(function(location) {
+                        const container = document.createElement("div");
+                        container.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-lowest shadow-sm font-body-sm text-body-sm text-on-surface";
 
-                nearMeStatus.textContent = "Locations near you:";
+                        const name = document.createElement("strong");
+                        name.className = "text-primary";
+                        name.textContent = location.name;
+
+                        const info = document.createElement("span");
+                        info.className = "text-on-surface-variant";
+                        info.textContent = ` — ${location.distance} km away — ${location.post_count} posts `;
+
+                        container.appendChild(name);
+                        container.appendChild(info);
+
+                        if (location.post_count > 0) {
+                            const link = document.createElement("a");
+                            link.href = `/location/${location.id}`;
+                            link.className = "text-secondary font-semibold hover:underline";
+                            link.textContent = "Explore posts →";
+                            container.appendChild(link);
+                        } else {
+                            const emptyMessage = document.createElement("span");
+                            emptyMessage.className = "text-on-surface-variant";
+                            emptyMessage.textContent = " No posts yet.";
+                            container.appendChild(emptyMessage);
+                        }
+
+                        nearbyLocations.appendChild(container);
+                    });
+
+                    setStatus("Locations near you:");
+                    nearMeStatus.scrollIntoView({ behavior: "smooth", block: "center" });
+                } catch (err) {
+                    setStatus("Something went wrong while finding nearby locations. Please try again.");
+                } finally {
+                    nearMeButton.disabled = false;
+                    nearMeButtonLabel.textContent = "Near Me";
+                }
             },
             function(error) {
-                nearMeStatus.textContent = "Could not get your location.";
+                setStatus("Could not get your location. Please allow location access in your browser and try again.");
+                nearMeButton.disabled = false;
+                nearMeButtonLabel.textContent = "Near Me";
             }
         );
     });
