@@ -1,112 +1,78 @@
 {% extends "base.html" %}
+{% from "_macros.html" import media_url with context %}
+
+{% block title %}Edit Post — NomadNet{% endblock %}
 
 {% block content %}
 
-    <h1>Edit Post</h1>
+<div class="max-w-3xl mx-auto w-full px-margin-mobile lg:px-margin py-12 lg:py-16">
 
-    <form method="POST">
+    <h1 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mb-8">Edit Post</h1>
 
-         {{ csrf_token() }}
+    <form method="POST" class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-5">
 
-        <div>
-            <label for="content">Your post</label>
-        </div>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        <div>
+        <div class="flex flex-col gap-1.5">
+            <label for="content" class="font-label-md text-label-md text-on-surface-variant">Your post</label>
             <textarea
                 id="content"
                 name="content"
                 rows="5"
-                cols="50"
                 required
+                class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary resize-y"
             >{{ post.content }}</textarea>
         </div>
 
-
-        <div>
-
-            <label for="location_search">Location</label>
-
+        <div class="flex flex-col gap-1.5 relative">
+            <label for="location_search" class="font-label-md text-label-md text-on-surface-variant">Location</label>
             <input
                 type="text"
                 id="location_search"
                 value="{{ post.location.name }}"
                 autocomplete="off"
+                class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary"
             >
-
-            <input
-                type="hidden"
-                id="location_id"
-                name="location_id"
-                value="{{ post.location.id }}"
-            >
-
-            <div id="location_results"></div>
-
-            <p id="selected_location">
-                Selected: {{ post.location.name }}, {{ post.location.country }}
-            </p>
-
+            <input type="hidden" id="location_id" name="location_id" value="{{ post.location.id }}">
+            <div id="location_results" class="absolute top-full inset-x-0 mt-1 bg-surface rounded-xl shadow-lg z-20 max-h-60 overflow-y-auto"></div>
+            <p id="selected_location" class="font-label-sm text-label-sm text-surface-tint font-semibold m-0">Selected: {{ post.location.name }}, {{ post.location.country }}</p>
         </div>
 
-
         {% if post.media %}
-            <div>
-                <h2>Existing media</h2>
+        <div class="flex flex-col gap-3">
+            <h2 class="font-headline-sm text-headline-sm text-primary font-semibold m-0">Existing media</h2>
 
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {% for media in post.media %}
+                <div class="p-3 rounded-xl bg-surface-container-low flex flex-col gap-2">
+                    {% if media.media_type == "image" %}
+                    <img src="{{ media_url(media.filename) }}" alt="Image from {{ post.location.name }}" class="w-full h-48 object-cover rounded-lg">
+                    {% elif media.media_type == "video" %}
+                    <video controls class="w-full h-48 object-cover rounded-lg">
+                        <source src="{{ media_url(media.filename) }}" type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}">
+                        Your browser does not support video playback.
+                    </video>
+                    {% endif %}
 
-                    <div>
-
-                        {% if media.media_type == "image" %}
-
-                            <img
-                                src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
-                                alt="Image from {{ post.location.name }}"
-                                style="max-width: 300px;"
-                            >
-
-                        {% elif media.media_type == "video" %}
-
-                            <video
-                                controls
-                                style="max-width: 300px;"
-                            >
-                                <source
-                                    src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
-                                    type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}"
-                                >
-                                Your browser does not support video playback.
-                            </video>
-
-                        {% endif %}
-
-                        <div>
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    name="delete_media"
-                                    value="{{ media.id }}"
-                                >
-                                Remove this media
-                            </label>
-                        </div>
-
-                    </div>
-
-                    <hr>
-
+                    <label class="flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant">
+                        <input type="checkbox" name="delete_media" value="{{ media.id }}" class="accent-error">
+                        Remove this media
+                    </label>
+                </div>
                 {% endfor %}
-
             </div>
+        </div>
         {% endif %}
 
-        <button type="submit">
-            Update Post
-        </button>
+        <button type="submit" class="w-full py-3 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-lg text-label-lg transition-colors">Update Post</button>
 
     </form>
 
+</div>
+
+{% endblock %}
+
+{% block scripts %}
 <script>
 
     const locationSearch =
@@ -156,6 +122,8 @@
 
             button.type = "button";
 
+            button.className = "block w-full text-left px-4 py-2.5 font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low transition-colors border-b border-surface-container-high last:border-b-0";
+
             button.textContent =
                 `${location.name}, ${location.city || ""} ${location.country}`;
 
@@ -187,6 +155,8 @@
                 document.createElement("button");
 
             button.type = "button";
+
+            button.className = "block w-full text-left px-4 py-2.5 font-body-sm text-body-sm text-on-surface hover:bg-surface-container-low transition-colors border-b border-surface-container-high last:border-b-0";
 
             button.textContent =
                 location.display_name;
@@ -262,5 +232,4 @@
     });
 
 </script>
-
 {% endblock %}

@@ -30,6 +30,22 @@ class User(UserMixin, db.Model):
         nullable=False
     )
 
+    avatar_url = db.Column(
+        db.String(500),
+        nullable=True
+    )
+
+    bio = db.Column(
+        db.String(500),
+        nullable=True
+    )
+
+    is_verified = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False
+    )
+
     posts = db.relationship("Post", backref="author", lazy=True)
     comments = db.relationship("Comment", backref="author", lazy=True)
     likes = db.relationship("Like",backref="user",lazy=True)
@@ -149,6 +165,33 @@ class Location(db.Model):
 
     provider = db.Column(db.String(50), nullable=True)
     provider_id = db.Column(db.String(100), nullable=True)
+
+    hero_image_url = db.Column(
+        db.String(500),
+        nullable=True
+    )
+
+    description = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    rating = db.Column(
+        db.Float,
+        default=0.0,
+        nullable=False
+    )
+
+    emoji = db.Column(
+        db.String(2),
+        nullable=True
+    )
+
+    is_verified = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False
+    )
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)

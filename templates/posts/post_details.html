@@ -1,211 +1,139 @@
-
 {% extends "base.html" %}
+{% from "_macros.html" import avatar, media_url with context %}
+
+{% block title %}{{ post.author.username }}'s post — NomadNet{% endblock %}
 
 {% block content %}
 
-    <h1>Post</h1>
+<div class="max-w-3xl mx-auto w-full px-margin-mobile lg:px-margin py-12 lg:py-16">
 
-    <article>
+    <article class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-5">
+        <div class="flex items-center gap-3">
+            {{ avatar(post.author, 'w-10 h-10') }}
+            <div class="flex flex-col">
+                <a href="{{ url_for('profiles.profile', username=post.author.username) }}" class="font-headline-md text-headline-md text-primary font-bold no-underline hover:underline">{{ post.author.username }}</a>
+                <span class="font-label-sm text-label-sm text-on-surface-variant">{{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}</span>
+            </div>
+        </div>
 
-        <h2>
-            <a href="{{ url_for('profiles.profile', username=post.author.username) }}">
-                {{ post.author.username }}
-            </a>
-        </h2>
+        <p class="font-body-lg text-body-lg text-on-surface leading-relaxed m-0">{{ post.content }}</p>
 
-        <p>
-            {{ post.content }}
-        </p>
-
-        {% for media in post.media %}
-
+        {% if post.media %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-xl overflow-hidden">
+            {% for media in post.media %}
             {% if media.media_type == "image" %}
-
-                <img
-                    src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
-                    alt="Image from {{ post.location.name }}"
-                    style="max-width: 500px;"
-                >
-
+            <img src="{{ media_url(media.filename) }}" alt="Image from {{ post.location.name }}" class="w-full h-72 object-cover rounded-lg">
             {% elif media.media_type == "video" %}
-
-                <video
-                    controls
-                    style="max-width: 500px;"
-                >
-                    <source
-                        src="{{ url_for('static', filename='uploads/posts/' + media.filename) }}"
-                        type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}"
-                    >
-                    Your browser does not support video playback.
-                </video>
-
+            <video controls class="w-full h-72 object-cover rounded-lg">
+                <source src="{{ media_url(media.filename) }}" type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}">
+                Your browser does not support video playback.
+            </video>
             {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
 
-        {% endfor %}
+        <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-low border-l-4 border-secondary w-fit">
+            <span class="material-symbols-outlined text-secondary text-[18px]">place</span>
+            <a href="{{ url_for('locations.location_page', location_id=post.location.id) }}" class="font-label-md text-label-md text-primary font-semibold no-underline hover:underline">{{ post.location.name }}</a>
+        </div>
 
-        <p>
-            <strong>Country:</strong>
-                {{ post.location.name }}
-        </p>
+        <div class="pt-4 border-t border-surface-container-high flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                {% if current_user.is_authenticated %}
+                <button type="button" id="like_button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">{{ 'favorite' if is_liked else 'favorite_border' }}</span>
+                    <span>{% if is_liked %}Unlike{% else %}Like{% endif %}</span>
+                </button>
+                {% else %}
+                <p class="font-body-sm text-body-sm text-on-surface-variant m-0">Please log in to like this post.</p>
+                {% endif %}
+                <span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[18px]">favorite</span>
+                    <span id="like_count">{{ post.likes|length }}</span> likes
+                </span>
+            </div>
 
-        <small>
-            {{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}
-        </small>
-
+            {% if current_user.is_authenticated and post.user_id == current_user.id %}
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('posts.edit_post', post_id=post.id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-label-sm transition-colors">
+                    <span class="material-symbols-outlined text-[16px]">edit</span>
+                    Edit
+                </a>
+                <form action="{{ url_for('posts.delete_post', post_id=post.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-error-container hover:bg-error/20 text-error font-label-sm text-label-sm transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">delete</span>
+                        Delete
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
     </article>
 
-    <hr>
+    <div class="mt-10 flex flex-col gap-6">
+        <h2 class="font-headline-sm text-headline-sm text-primary font-bold">Comments</h2>
 
-    {% if current_user.is_authenticated and post.user_id == current_user.id %}
-
-        <a href="{{ url_for('posts.edit_post', post_id=post.id) }}">
-            Edit
-        </a>
-
-        <form
-            action="{{ url_for('posts.delete_post', post_id=post.id) }}"
-            method="POST"
-        >
-             {{ csrf_token() }}
-
-            <button type="submit">
-                Delete
-            </button>
+        {% if current_user.is_authenticated %}
+        <form action="{{ url_for('posts.create_comment', post_id=post.id) }}" method="POST" class="flex flex-col gap-3 p-5 rounded-2xl bg-surface-container-lowest shadow-sm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="content" class="font-label-md text-label-md text-on-surface-variant">Add a comment</label>
+            <textarea
+                id="content"
+                name="content"
+                rows="3"
+                placeholder="Write a comment..."
+                required
+                class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary resize-y"
+            ></textarea>
+            <button type="submit" class="self-end px-5 py-2.5 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md transition-colors">Comment</button>
         </form>
-
-    {% endif %}
-
-    <br>
-
-    <hr>
-
-    {% if current_user.is_authenticated %}
-
-        <button
-            type="button"
-            id="like_button"
-        >
-        {% if is_liked %}
-            Unlike
         {% else %}
-            Like
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Please log in to comment.</p>
         {% endif %}
-        </button>
 
-    {% else %}
-
-        <p>
-            Please log in to like this post.
-        </p>
-
-    {% endif %}
-
-    <p>
-        ❤️ <span id="like_count">{{ post.likes|length }}</span> likes
-    </p>
-
-    <hr>
-    <h2>Comments</h2>
-
-    {% if current_user.is_authenticated %}
-
-        <form
-            action="{{ url_for('posts.create_comment', post_id=post.id) }}"
-            method="POST"
-        >
-
-             {{ csrf_token() }}
-
-            <div>
-                <label for="content">Add a comment</label>
-            </div>
-
-            <div>
-                <textarea
-                    id="content"
-                    name="content"
-                    rows="4"
-                    cols="50"
-                    placeholder="Write a comment..."
-                    required
-                ></textarea>
-            </div>
-
-            <button type="submit">
-                Comment
-            </button>
-
-        </form>
-
-    {% else %}
-
-        <p>
-            Please log in to comment.
-        </p>
-
-    {% endif %}
-
-    {% if post.comments %}
-
-        {% for comment in post.comments %}
-
-            <article>
-
-                <h4>
-                    <a href="{{ url_for('profiles.profile', username=comment.author.username) }}">
-                        {{ comment.author.username }}
-                    </a>
-                </h4>
-
-                <p>
-                    {{ comment.content }}
-                </p>
-
-                <small>
-                    {{ comment.created_at.strftime("%d %B %Y, %I:%M %p") }}
-                </small>
-
+        {% if post.comments %}
+        <div class="flex flex-col gap-4">
+            {% for comment in post.comments %}
+            <article class="p-5 rounded-xl bg-surface-container-low flex flex-col gap-2">
+                <div class="flex items-center justify-between gap-4">
+                    <a href="{{ url_for('profiles.profile', username=comment.author.username) }}" class="font-label-md text-label-md text-primary font-semibold no-underline hover:underline">{{ comment.author.username }}</a>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">{{ comment.created_at.strftime("%d %B %Y, %I:%M %p") }}</span>
+                </div>
+                <p class="font-body-md text-body-md text-on-surface m-0">{{ comment.content }}</p>
                 {% if current_user.is_authenticated and comment.user_id == current_user.id %}
-
-                    <form
-                        action="{{ url_for('posts.delete_comment', comment_id=comment.id) }}"
-                        method="POST"
-                    >
-
-                         {{ csrf_token() }}
-
-                        <button type="submit">
-                            Delete
-                        </button>
-                    </form>
-
+                <form action="{{ url_for('posts.delete_comment', comment_id=comment.id) }}" method="POST" class="self-end">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-error-container hover:bg-error/20 text-error font-label-sm text-label-sm transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">delete</span>
+                        Delete
+                    </button>
+                </form>
                 {% endif %}
-
             </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="font-body-sm text-body-sm text-on-surface-variant">No comments yet.</p>
+        {% endif %}
+    </div>
 
-            <hr>
-
-        {% endfor %}
-
-    {% else %}
-
-        <p>
-            No comments yet.
-        </p>
-
-    {% endif %}
-
-    <a href="{{ url_for('locations.home') }}">
-        ← Back to Home
+    <a href="{{ url_for('locations.home') }}" class="inline-flex items-center gap-2 mt-10 font-label-lg text-label-lg text-secondary hover:underline">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        Back to Home
     </a>
 
+</div>
 
+{% endblock %}
+
+{% block scripts %}
 <script>
 
     const likeButton = document.getElementById("like_button");
     const likeCount = document.getElementById("like_count");
-    const csrfToken =document.querySelector('meta[name="csrf-token"]').getAttribute("content");
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
 
 
     if (likeButton) {
@@ -234,10 +162,15 @@
 
                 likeCount.textContent = data.like_count;
 
+                const icon = likeButton.querySelector(".material-symbols-outlined");
+                const label = likeButton.querySelector("span:last-child");
+
                 if (data.liked) {
-                    likeButton.textContent = "Unlike";
+                    icon.textContent = "favorite";
+                    label.textContent = "Unlike";
                 } else {
-                    likeButton.textContent = "Like";
+                    icon.textContent = "favorite_border";
+                    label.textContent = "Like";
                 }
 
             } catch (error) {
@@ -255,7 +188,4 @@
     }
 
 </script>
-
-
 {% endblock %}
-

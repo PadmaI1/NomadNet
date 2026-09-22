@@ -1,3 +1,6 @@
+from collections import Counter
+from datetime import datetime
+
 from flask import Blueprint, render_template, abort, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 
@@ -31,6 +34,17 @@ def profile(username):
     .all()
     )
 
+    post_counts = Counter(post.location_id for post in posts if post.location_id)
+    explored_locations = sorted(
+        locations,
+        key=lambda location: post_counts.get(location.id, 0),
+        reverse=True
+    )
+
+    current_base = posts[0].location if posts and posts[0].location else None
+
+    nomad_circle = [follow.follower for follow in user.followers][:5]
+
     is_following = False
 
     if current_user.is_authenticated:
@@ -48,7 +62,14 @@ def profile(username):
         user=user,
         posts=posts,
         locations=locations,
-        is_following=is_following
+        explored_locations=explored_locations,
+        post_counts=post_counts,
+        current_base=current_base,
+        nomad_circle=nomad_circle,
+        follower_count=len(user.followers),
+        following_count=len(user.following),
+        is_following=is_following,
+        now=datetime.utcnow()
     )
 
 

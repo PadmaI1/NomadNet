@@ -1,81 +1,51 @@
 {% extends "base.html" %}
 
+{% block title %}Notifications — NomadNet{% endblock %}
+
 {% block content %}
 
-    <h1>Notifications</h1>
+<div class="max-w-3xl mx-auto w-full px-margin-mobile lg:px-margin py-12 lg:py-16">
+
+    <h1 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mb-8">Notifications</h1>
 
     {% if notifications %}
-
+    <div class="flex flex-col gap-4">
         {% for notification in notifications %}
-
-            <article>
-
+        <article class="p-5 rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-between gap-4">
+            <div class="flex flex-col gap-1">
                 {% if notification.notification_type == "like" %}
-
-                    <p>
-                        <strong>{{ notification.actor.username }}</strong>
-                        liked your post.
-                    </p>
-
-                    <a href="{{ url_for(
-                        'posts.post_detail',
-                        post_id=notification.post_id
-                    ) }}">
-                        View post
-                    </a>
-
+                <p class="font-body-md text-body-md text-on-surface m-0">
+                    <strong class="text-primary">{{ notification.actor.username }}</strong> liked your post.
+                </p>
+                <a href="{{ url_for('posts.post_detail', post_id=notification.post_id) }}" class="font-label-sm text-label-sm text-secondary hover:underline w-fit">View post</a>
                 {% elif notification.notification_type == "comment" %}
-
-                    <p>
-                        <strong>{{ notification.actor.username }}</strong>
-                        commented on your post.
-                    </p>
-
-                    <a href="{{ url_for(
-                        'posts.post_detail',
-                        post_id=notification.post_id
-                    ) }}">
-                        View post
-                    </a>
-
+                <p class="font-body-md text-body-md text-on-surface m-0">
+                    <strong class="text-primary">{{ notification.actor.username }}</strong> commented on your post.
+                </p>
+                <a href="{{ url_for('posts.post_detail', post_id=notification.post_id) }}" class="font-label-sm text-label-sm text-secondary hover:underline w-fit">View post</a>
                 {% elif notification.notification_type == "follow" %}
-
-                    <p>
-                        <strong>{{ notification.actor.username }}</strong>
-                        started following you.
-                    </p>
-
-                    <a href="{{ url_for(
-                        'profiles.profile',
-                        username=notification.actor.username
-                    ) }}">
-                        View profile
-                    </a>
-
+                <p class="font-body-md text-body-md text-on-surface m-0">
+                    <strong class="text-primary">{{ notification.actor.username }}</strong> started following you.
+                </p>
+                <a href="{{ url_for('profiles.profile', username=notification.actor.username) }}" class="font-label-sm text-label-sm text-secondary hover:underline w-fit">View profile</a>
                 {% endif %}
-
-                <small>
-                    {{ notification.created_at.strftime(
-                        "%d %B %Y, %I:%M %p"
-                    ) }}
-                </small>
-
-            </article>
-
-            <hr>
-
+            </div>
+            <span class="font-label-sm text-label-sm text-on-surface-variant shrink-0">{{ notification.created_at.strftime("%d %B %Y, %I:%M %p") }}</span>
+        </article>
         {% endfor %}
-
+    </div>
     {% else %}
-
-        <p>
-            You don't have any notifications yet.
-        </p>
-
+    <div class="p-10 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col items-center text-center gap-3">
+        <span class="material-symbols-outlined text-primary text-[32px]">notifications_off</span>
+        <p class="font-body-md text-body-md text-on-surface-variant m-0">You don't have any notifications yet.</p>
+    </div>
     {% endif %}
 
-    <a href="{{ url_for('locations.home') }}">
-        ← Back to Home
+    <a href="{{ url_for('locations.home') }}" class="inline-flex items-center gap-2 mt-10 font-label-lg text-label-lg text-secondary hover:underline">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        Back to Home
     </a>
+
+</div>
 
 {% endblock %}

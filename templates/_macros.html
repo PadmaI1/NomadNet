@@ -1,0 +1,19 @@
+{% macro media_url(filename) %}{% if filename.startswith('http://') or filename.startswith('https://') %}{{ filename }}{% else %}{{ url_for('static', filename='uploads/posts/' + filename) }}{% endif %}{% endmacro %}
+
+{% macro avatar(user, size_classes) %}
+{% if user and user.avatar_url %}
+<img alt="{{ user.username }}" class="{{ size_classes }} rounded-full object-cover ring-2 ring-surface-container-high" src="{{ user.avatar_url }}">
+{% else %}
+<div class="{{ size_classes }} rounded-full bg-primary-container flex items-center justify-center font-headline-md font-bold text-on-primary">{{ (user.username[0:2] if user else '?')|upper }}</div>
+{% endif %}
+{% endmacro %}
+
+{% macro date(dt, fmt="%d %b %Y, %I:%M %p") %}{{ dt.strftime(fmt) }}{% endmacro %}
+
+{% macro time_ago(dt) %}
+{% set delta = now - dt %}
+{% if delta.days >= 1 %}{{ delta.days }} day{{ 's' if delta.days != 1 else '' }} ago
+{% elif (delta.seconds // 3600) >= 1 %}{{ delta.seconds // 3600 }} hour{{ 's' if (delta.seconds // 3600) != 1 else '' }} ago
+{% else %}{{ (delta.seconds // 60) }} min ago
+{% endif %}
+{% endmacro %}

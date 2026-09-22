@@ -1,18 +1,21 @@
 from flask import Blueprint, render_template, abort, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 import requests
-from models import db, Country, Follow, Post, Location, LocationFollow, Like, Comment
+from models import db, Country, Follow, Post, Location, LocationFollow, Like, Comment, User
 from datetime import datetime, timedelta
+from utils.location_enricher import enrich_locations, enrich_location
+from routes.api import calculate_distance
 
 
 locations = Blueprint("locations", __name__)
 
 
-@locations.route("/")
-def home():
+def _build_discovery_context():
+    """Shared trending/recently-active/pinned computation used by both the
+    Explore and For You pages."""
 
     countries = Country.query.all()
-    locations = Location.query.all()
+    all_locations = Location.query.all()
 
     cutoff = datetime.utcnow() - timedelta(days=7)
 
@@ -104,51 +107,94 @@ def home():
         for location_id in top_location_ids
     ]
 
+    enriched_trending = enrich_locations(trending_locations)
+    enriched_recently_active = enrich_locations(recently_active_locations)
+
+    pinned_locations = []
 
     if current_user.is_authenticated:
 
-        followed_locations = LocationFollow.query.filter_by(
-            user_id=current_user.id
-        ).all()
+        followed_location_ids = [
+            follow.location_id
+            for follow in LocationFollow.query.filter_by(
+                user_id=current_user.id
+            ).limit(3).all()
+        ]
 
-        followed_location_ids = []
-
-        for follow in followed_locations:
-            followed_location_ids.append(
-                follow.location_id
-            )
-
-        if followed_location_ids:
-            posts = (
-                Post.query
-                .filter(
-                    Post.location_id.in_(followed_location_ids)
-                )
-                .order_by(
-                    Post.created_at.desc()
-                )
-                .all()
-            )
-
-        else:
-
-            posts = Post.query.order_by(
-                Post.created_at.desc()
+        pinned_locations = enrich_locations(
+            Location.query.filter(
+                Location.id.in_(followed_location_ids)
             ).all()
+        )
 
-    else:
+    return {
+        "countries": countries,
+        "locations": all_locations,
+        "recently_active_locations": enriched_recently_active,
+        "trending_locations": enriched_trending,
+        "pinned_locations": pinned_locations,
+        "now": datetime.utcnow(),
+    }
 
-        posts = Post.query.order_by(
-            Post.created_at.desc()
-        ).all()
+
+@locations.route("/")
+def home():
+
+    posts = Post.query.order_by(
+        Post.created_at.desc()
+    ).limit(60).all()
 
     return render_template(
         "locations/home.html",
-        countries=countries,
-        locations=locations,
         posts=posts,
-        recently_active_locations=recently_active_locations,
-        trending_locations=trending_locations
+        active_tab="explore",
+        is_for_you=False,
+        **_build_discovery_context()
+    )
+
+
+@locations.route("/for-you")
+@login_required
+def for_you():
+
+    followed_location_ids = [
+        follow.location_id
+        for follow in LocationFollow.query.filter_by(
+            user_id=current_user.id
+        ).all()
+    ]
+
+    followed_user_ids = [
+        follow.followed_id
+        for follow in Follow.query.filter_by(
+            follower_id=current_user.id
+        ).all()
+    ]
+
+    if followed_location_ids or followed_user_ids:
+
+        posts = (
+            Post.query
+            .filter(
+                db.or_(
+                    Post.location_id.in_(followed_location_ids),
+                    Post.user_id.in_(followed_user_ids)
+                )
+            )
+            .order_by(Post.created_at.desc())
+            .all()
+        )
+
+    else:
+
+        posts = []
+
+    return render_template(
+        "locations/home.html",
+        posts=posts,
+        active_tab="foryou",
+        is_for_you=True,
+        **_build_discovery_context()
     )
 
 
@@ -185,12 +231,54 @@ def location_page(location_id):
 
     contributor_count = len(contributor_ids)
 
+    media_count = sum(len(post.media) for post in posts)
+
+    follower_count = LocationFollow.query.filter_by(
+        location_id=location.id
+    ).count()
+
+    recent_contributors = []
+    seen_contributor_ids = set()
+
+    for post in posts:
+        if post.user_id not in seen_contributor_ids:
+            seen_contributor_ids.add(post.user_id)
+            recent_contributors.append(post.author)
+        if len(recent_contributors) >= 5:
+            break
+
+    other_locations = Location.query.filter(
+        Location.id != location.id
+    ).all()
+
+    nearby_locations = sorted(
+        (
+            {
+                "location": other,
+                "distance": calculate_distance(
+                    location.latitude,
+                    location.longitude,
+                    other.latitude,
+                    other.longitude
+                )
+            }
+            for other in other_locations
+        ),
+        key=lambda item: item["distance"]
+    )[:4]
+
     return render_template(
         "locations/location.html",
         location=location,
         posts=posts,
         contributor_count=contributor_count,
-        is_following=is_following
+        is_following=is_following,
+        media_count=media_count,
+        follower_count=follower_count,
+        recent_contributors=recent_contributors,
+        nearby_locations=nearby_locations,
+        now=datetime.utcnow(),
+        **enrich_location(location)
     )
 
 
@@ -201,7 +289,7 @@ def search_locations():
 
     if not query:
         return render_template(
-            "search_locations.html",
+            "locations/search_locations.html",
             locations=[],
             api_locations=[],
             query=""

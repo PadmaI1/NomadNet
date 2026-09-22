@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
+{% block title %}Country not found — NomadNet{% endblock %}
+
 {% block content %}
 
-    <h1>404</h1>
-
-    <h2>Country not found 🌍</h2>
-
-    <p>
-        Sorry, we couldn't find the country you're looking for.
-    </p>
-
-    <a href="{{ url_for('locations.home') }}">
+<div class="max-w-xl mx-auto w-full px-margin-mobile lg:px-margin py-24 flex flex-col items-center text-center gap-4">
+    <span class="font-display-lg text-display-lg text-primary font-bold tracking-tight">404</span>
+    <h1 class="font-headline-lg text-headline-lg text-primary font-semibold">Country not found 🌍</h1>
+    <p class="font-body-md text-body-md text-on-surface-variant">Sorry, we couldn't find the country you're looking for.</p>
+    <a href="{{ url_for('locations.home') }}" class="inline-flex items-center gap-2 mt-2 px-5 py-2.5 rounded-full bg-primary text-on-primary font-label-lg text-label-lg hover:bg-primary-container transition-all">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
         Go back home
     </a>
+</div>
 
 {% endblock %}

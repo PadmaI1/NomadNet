@@ -1,66 +1,80 @@
 {% extends "base.html" %}
 
+{% block title %}Search Locations — NomadNet{% endblock %}
+
 {% block content %}
 
-<h1>Search locations</h1>
+<div class="max-w-[1440px] mx-auto w-full px-margin-mobile lg:px-margin py-12 lg:py-16">
 
-<form method="GET" action="{{ url_for('locations.search_locations') }}">
-    <input
-        type="text"
-        name="q"
-        value="{{ query }}"
-        placeholder="Search for a location"
-    >
+    <div class="flex flex-col gap-2 mb-8">
+        <span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest font-bold">Location Search</span>
+        <h1 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight">Find a place on NomadNet</h1>
+    </div>
 
-    <button type="submit">Search</button>
-</form>
+    <form method="GET" action="{{ url_for('locations.search_locations') }}" class="mb-12">
+        <div class="flex items-center gap-3 p-2 pl-4 rounded-full bg-surface-container-lowest shadow-md max-w-2xl">
+            <span class="material-symbols-outlined text-secondary text-[22px]">search</span>
+            <input
+                type="text"
+                name="q"
+                value="{{ query }}"
+                placeholder="Search Bangkok, Kyoto, Bali, or a place name..."
+                class="w-full bg-transparent font-body-md text-body-md focus:outline-none placeholder:text-on-surface-variant/70 text-on-surface"
+            >
+            <button type="submit" class="px-5 py-2.5 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md transition-colors shrink-0">Search</button>
+        </div>
+    </form>
 
-
-{% if locations %}
-    <h2>Locations already on NomadNet</h2>
-
-    {% for location in locations %}
-        <div>
-            <strong>{{ location.name }}</strong>
-            <p>{{ location.city }}, {{ location.country }}</p>
-            <p>{{ location.type }}</p>
-
-            <a href="{{ url_for('locations.location_page', location_id=location.id) }}">
-                View location
+    {% if locations %}
+    <div class="mb-12">
+        <h2 class="font-headline-sm text-headline-sm text-primary font-semibold mb-4">Locations already on NomadNet</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for location in locations %}
+            <a href="{{ url_for('locations.location_page', location_id=location.id) }}" class="p-5 rounded-xl bg-surface-container-lowest hover:bg-surface-container-low transition-all shadow-sm flex flex-col gap-1 group no-underline">
+                <span class="font-label-lg text-label-lg text-primary font-semibold group-hover:text-secondary transition-colors">{{ location.name }}</span>
+                <span class="font-body-sm text-body-sm text-on-surface-variant">{{ location.city }}, {{ location.country }}</span>
+                <span class="font-label-sm text-label-sm text-surface-tint uppercase tracking-wider mt-1">{{ location.type }}</span>
             </a>
+            {% endfor %}
         </div>
-        <hr>
-    {% endfor %}
-{% endif %}
+    </div>
+    {% endif %}
 
+    {% if api_locations %}
+    <div>
+        <h2 class="font-headline-sm text-headline-sm text-primary font-semibold mb-4">Places found online</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for location in api_locations %}
+            <div class="p-5 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-2">
+                <span class="font-label-lg text-label-lg text-primary font-semibold">{{ location.name }}</span>
+                <p class="font-body-sm text-body-sm text-on-surface-variant m-0">{{ location.display_name }}</p>
+                <span class="font-label-sm text-label-sm text-surface-tint uppercase tracking-wider">{{ location.type }}</span>
 
-{% if api_locations %}
-    <h2>Places found online</h2>
-
-    {% for location in api_locations %}
-        <div>
-            <strong>{{ location.name }}</strong>
-
-            <p>{{ location.display_name }}</p>
-
-            <p>{{ location.type }}</p>
-
-            <form method="POST" action="{{ url_for('api.create_location') }}">
-                <input type="hidden" name="name" value="{{ location.name }}">
-                <input type="hidden" name="type" value="{{ location.type }}">
-                <input type="hidden" name="country" value="{{ location.country }}">
-                <input type="hidden" name="city" value="{{ location.city }}">
-                <input type="hidden" name="latitude" value="{{ location.latitude }}">
-                <input type="hidden" name="longitude" value="{{ location.longitude }}">
-                <input type="hidden" name="provider" value="{{ location.provider }}">
-                <input type="hidden" name="provider_id" value="{{ location.provider_id }}">
-
-                <button type="submit">View location</button>
-            </form>
+                <form method="POST" action="{{ url_for('locations.create_location') }}" class="mt-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="name" value="{{ location.name }}">
+                    <input type="hidden" name="type" value="{{ location.type }}">
+                    <input type="hidden" name="country" value="{{ location.country }}">
+                    <input type="hidden" name="city" value="{{ location.city }}">
+                    <input type="hidden" name="latitude" value="{{ location.latitude }}">
+                    <input type="hidden" name="longitude" value="{{ location.longitude }}">
+                    <input type="hidden" name="provider" value="{{ location.provider }}">
+                    <input type="hidden" name="provider_id" value="{{ location.provider_id }}">
+                    <button type="submit" class="w-full px-4 py-2 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md transition-colors">View location</button>
+                </form>
+            </div>
+            {% endfor %}
         </div>
+    </div>
+    {% endif %}
 
-        <hr>
-    {% endfor %}
-{% endif %}
+    {% if query and not locations and not api_locations %}
+    <div class="p-10 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col items-center text-center gap-3">
+        <span class="material-symbols-outlined text-primary text-[32px]">location_off</span>
+        <p class="font-body-md text-body-md text-on-surface-variant m-0">No places matched "{{ query }}".</p>
+    </div>
+    {% endif %}
+
+</div>
 
 {% endblock %}

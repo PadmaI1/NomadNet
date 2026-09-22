@@ -1,53 +1,41 @@
-
 {% extends "base.html" %}
+
+{% block title %}{{ country.name }} — NomadNet{% endblock %}
 
 {% block content %}
 
-    <h1>{{ country.name }}</h1>
+<div class="max-w-[1440px] mx-auto w-full px-margin-mobile lg:px-margin py-12 lg:py-16">
 
-    <p>
-        Country code: {{ country.code }}
-    </p>
+    <div class="rounded-2xl overflow-hidden bg-primary-container text-on-primary p-8 lg:p-12 flex flex-col gap-2">
+        <span class="font-label-sm text-label-sm uppercase tracking-widest text-on-primary-container">Country code: {{ country.code }}</span>
+        <h1 class="font-display-lg-mobile lg:font-display-lg text-display-lg-mobile lg:text-display-lg text-on-primary font-semibold tracking-tight">{{ country.name }}</h1>
+    </div>
 
-    <hr>
+    <div class="mt-10 flex flex-col gap-6">
+        <h2 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight">Traveller Posts</h2>
 
-    <h2>Traveller Posts</h2>
-
-    {% if posts %}
-
-        {% for post in posts %}
-
-            <article>
-
-                <h3>
-                    {{ post.author.username }}
-                </h3>
-
-                <p>
-                    {{ post.content }}
-                </p>
-
-                <small>
-                    {{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}
-                </small>
-
+        {% if posts %}
+        <div class="flex flex-col gap-6">
+            {% for post in posts %}
+            <article class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-3 hover:shadow-md transition-shadow">
+                <span class="font-label-md text-label-md text-primary font-semibold">{{ post.author.username }}</span>
+                <p class="font-body-lg text-body-lg text-on-surface leading-relaxed m-0">{{ post.content }}</p>
+                <span class="font-label-sm text-label-sm text-on-surface-variant">{{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}</span>
             </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-10 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col items-center text-center gap-3">
+            <p class="font-body-md text-body-md text-on-surface-variant m-0">No posts about {{ country.name }} yet. Be the first traveller to share something!</p>
+        </div>
+        {% endif %}
+    </div>
 
-            <hr>
-
-        {% endfor %}
-
-    {% else %}
-
-        <p>
-            No posts about {{ country.name }} yet. Be the first traveller to share something!
-        </p>
-
-    {% endif %}
-
-    <a href="{{ url_for('locations.home') }}">
-        ← Back to Home
+    <a href="{{ url_for('locations.home') }}" class="inline-flex items-center gap-2 mt-10 font-label-lg text-label-lg text-secondary hover:underline">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        Back to Home
     </a>
 
-{% endblock %}
+</div>
 
+{% endblock %}

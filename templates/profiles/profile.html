@@ -1,153 +1,199 @@
 {% extends "base.html" %}
+{% from "_macros.html" import avatar, time_ago, media_url with context %}
+
+{% block title %}{{ user.username }} — NomadNet{% endblock %}
 
 {% block content %}
 
-    <h1>{{ user.username }}</h1>
+<div class="max-w-[1440px] mx-auto w-full px-margin-mobile lg:px-margin py-8 lg:py-12">
 
-    <p>
-        Member since:
-        {{ user.created_at.strftime("%d %B %Y") }}
-    </p>
-
-    <div>
-        <p>
-            <strong>{{ posts|length }}</strong>
-            Posts
-        </p>
-
-        <p>
-            <strong>{{ locations|length }}</strong>
-            Locations
-        </p>
+    <!-- ================= COVER ================= -->
+    <div class="relative rounded-2xl overflow-hidden h-40 sm:h-56 lg:h-64 shadow-sm" style="{% if current_base and current_base.hero_image_url %}background-image: url('{{ current_base.hero_image_url }}');{% endif %} background-size: cover; background-position: center; background-color: #1b4332;">
+        <div class="absolute inset-0 bg-gradient-to-t from-primary via-primary/40 to-primary/10"></div>
+        {% if current_base %}
+        <span class="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface/15 backdrop-blur-md font-label-sm text-label-sm text-on-primary">
+            <span class="material-symbols-outlined text-[14px]">location_on</span>
+            {{ current_base.name }}{% if current_base.city %}, {{ current_base.city }}{% endif %}
+        </span>
+        {% endif %}
     </div>
 
-    {% if current_user.is_authenticated and current_user.id == user.id %}
-
-        <h2>Account</h2>
-
-        <form
-            method="POST"
-            action="{{ url_for('auth.delete_account') }}"
-            onsubmit="return confirm('Are you sure you want to permanently delete your account? This action cannot be undone.');"
-        >
-
-             {{ csrf_token() }}
-
-            <button type="submit">
-                Delete My Account
-            </button>
-        </form>
-
-    {% endif %}
-
-    <hr>
-
-    {% if current_user.is_authenticated and current_user.id != user.id %}
-
-        <form
-            action="{{ url_for('profiles.follow_user', username=user.username) }}"
-            method="POST"
-        >
-
-             {{ csrf_token() }}
-
-        {% if is_following %}
-            <button type="submit">
-                Unfollow
-            </button>
-        {% else %}
-            <button type="submit">
-                Follow
-            </button>
-        {% endif %}
-        
-        </form>
-
-    {% endif %}
-
-    <h2>Locations Contributed To</h2>
-
-    {% if locations %}
-
-        {% for location in locations %}
-
-            <p>
-                <a href="{{ url_for('locations.location_page', location_id=location.id) }}">
-                    {{ location.name }}
-                </a>
-
-                {% if location.city %}
-                    — {{ location.city }}
+    <!-- ================= PROFILE CARD ================= -->
+    <div class="relative -mt-14 sm:-mt-16 mx-2 sm:mx-4 rounded-2xl bg-surface-container-lowest shadow-md p-6 sm:p-8 flex flex-col sm:flex-row sm:items-end gap-6">
+        <div class="shrink-0 -mt-12 sm:-mt-2">
+            {{ avatar(user, 'w-24 h-24 sm:w-28 sm:h-28 ring-4 ring-surface-container-lowest') }}
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+                <h1 class="font-headline-xl-mobile lg:font-headline-lg text-headline-xl-mobile lg:text-headline-lg text-primary font-bold tracking-tight m-0">{{ user.username }}</h1>
+                {% if user.is_verified %}
+                <span class="material-symbols-outlined text-secondary text-[20px]" title="Verified traveller">verified</span>
                 {% endif %}
+            </div>
+            <p class="font-label-md text-label-md text-on-surface-variant mt-0.5">@{{ user.username }} · Member since {{ user.created_at.strftime("%B %Y") }}</p>
+            {% if user.bio %}
+            <p class="font-body-md text-body-md text-on-surface mt-3 max-w-2xl leading-relaxed">{{ user.bio }}</p>
+            {% endif %}
 
-                — {{ location.country }}
-            </p>
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4">
+                <span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[18px] text-secondary">place</span>
+                    <strong class="text-on-surface">{{ locations|length }}</strong> Territories
+                </span>
+                <span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[18px] text-secondary">article</span>
+                    <strong class="text-on-surface">{{ posts|length }}</strong> Posts
+                </span>
+                <span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[18px] text-secondary">group</span>
+                    <strong class="text-on-surface">{{ follower_count }}</strong> Circle
+                </span>
+            </div>
+        </div>
 
-        {% endfor %}
+        {% if current_user.is_authenticated and current_user.id != user.id %}
+        <form action="{{ url_for('profiles.follow_user', username=user.username) }}" method="POST" class="shrink-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if is_following %}
+            <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-lg text-label-lg transition-colors shadow-sm">
+                <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
+                In Your Circle
+            </button>
+            {% else %}
+            <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-lg text-label-lg transition-colors shadow-sm">
+                <span class="material-symbols-outlined text-[18px]">person_add</span>
+                Join Circle
+            </button>
+            {% endif %}
+        </form>
+        {% endif %}
+    </div>
 
-    {% else %}
-
-        <p>
-            No locations contributed to yet.
-        </p>
-
+    <!-- ================= EXPLORED & MAPPED ================= -->
+    {% if explored_locations %}
+    <div class="mt-8 mx-2 sm:mx-4">
+        <h2 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider font-bold mb-4">Explored &amp; Mapped Territories</h2>
+        <div class="flex items-start gap-5 overflow-x-auto pb-2">
+            {% for location in explored_locations[:8] %}
+            <a href="{{ url_for('locations.location_page', location_id=location.id) }}" class="flex flex-col items-center gap-2 shrink-0 w-20 no-underline group">
+                <div class="w-16 h-16 rounded-full bg-cover bg-center ring-2 ring-surface-container-high group-hover:ring-secondary transition-all" style="{% if location.hero_image_url %}background-image: url('{{ location.hero_image_url }}'){% else %}background-color: #e6e2dd{% endif %}"></div>
+                <span class="font-label-sm text-label-sm text-on-surface text-center truncate w-full">{{ location.name }}</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
     {% endif %}
 
-    <h2>{{ user.username }}'s Posts</h2>
+    <!-- ================= FEED & SIDEBAR ================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8 mx-2 sm:mx-4">
 
-    {% if posts %}
-
-        {% for post in posts %}
-
-            <article>
-
-                <h3>
-                    <a href="{{ url_for('posts.post_detail', post_id=post.id) }}">
-                        Post
+        <div class="lg:col-span-8 flex flex-col gap-4">
+            <h2 class="font-headline-sm text-headline-sm text-primary font-bold">{{ user.username }}'s Posts</h2>
+            {% if posts %}
+            <div class="flex flex-col gap-6">
+                {% for post in posts %}
+                <article class="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-3 hover:shadow-md transition-shadow">
+                    <a href="{{ url_for('posts.post_detail', post_id=post.id) }}" class="no-underline text-inherit">
+                        <p class="font-body-lg text-body-lg text-on-surface leading-relaxed m-0">{{ post.content }}</p>
                     </a>
-                </h3>
-
-                <p>
-                    {{ post.content }}
-                </p>
-
-                <p>
-                    <strong>Location:</strong>
-
-                    <a href="{{ url_for(
-                        'locations.location_page',
-                        location_id=post.location.id
-                    ) }}">
-                        {{ post.location.name }}
-                    </a>
-
-                    {% if post.location.city %}
-                        — {{ post.location.city }}
+                    {% if post.media %}
+                    <div class="w-full rounded-xl overflow-hidden">
+                        {% set media = post.media[0] %}
+                        {% if media.media_type == "image" %}
+                        <img src="{{ media_url(media.filename) }}" alt="Image from {{ post.location.name if post.location else 'a post' }}" class="w-full h-64 object-cover">
+                        {% elif media.media_type == "video" %}
+                        <video controls class="w-full">
+                            <source src="{{ media_url(media.filename) }}" type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}">
+                            Your browser does not support video playback.
+                        </video>
+                        {% endif %}
+                    </div>
                     {% endif %}
+                    {% if post.location %}
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-secondary text-[16px]">place</span>
+                        <a href="{{ url_for('locations.location_page', location_id=post.location.id) }}" class="font-label-sm text-label-sm text-primary font-semibold no-underline hover:underline">
+                            {{ post.location.name }}{% if post.location.city %}, {{ post.location.city }}{% endif %} — {{ post.location.country }}
+                        </a>
+                    </div>
+                    {% endif %}
+                    <div class="pt-3 border-t border-surface-container-high flex flex-wrap items-center justify-between gap-4">
+                        <span class="font-label-sm text-label-sm text-on-surface-variant">{{ time_ago(post.created_at) }}</span>
+                        <div class="flex items-center gap-4 text-on-surface-variant">
+                            <span class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[18px]">favorite</span>
+                                <span class="font-label-md text-label-md">{{ post.likes|length }}</span>
+                            </span>
+                            <span class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[18px]">chat_bubble</span>
+                                <span class="font-label-md text-label-md">{{ post.comments|length }}</span>
+                            </span>
+                        </div>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-10 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col items-center text-center gap-3">
+                <p class="font-body-md text-body-md text-on-surface-variant m-0">This traveller hasn't posted anything yet.</p>
+            </div>
+            {% endif %}
+        </div>
 
-                    — {{ post.location.country }}
-                </p>
+        <aside class="lg:col-span-4 flex flex-col gap-6">
+            {% if current_base %}
+            <div class="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-headline-sm text-headline-sm text-primary font-semibold m-0">Current Base</h3>
+                    <span class="px-2.5 py-1 rounded-full bg-secondary/15 text-secondary font-label-sm text-label-sm font-semibold">Active</span>
+                </div>
+                <a href="{{ url_for('locations.location_page', location_id=current_base.id) }}" class="flex items-center gap-3 no-underline group">
+                    <div class="w-12 h-12 rounded-lg bg-cover bg-center shrink-0" style="{% if current_base.hero_image_url %}background-image: url('{{ current_base.hero_image_url }}'){% else %}background-color: #e6e2dd{% endif %}"></div>
+                    <div class="flex flex-col min-w-0">
+                        <span class="font-label-md text-label-md text-primary font-bold truncate group-hover:text-secondary transition-colors">{{ current_base.name }}</span>
+                        <span class="font-body-sm text-body-sm text-on-surface-variant truncate">{% if current_base.city %}{{ current_base.city }}, {% endif %}{{ current_base.country }}</span>
+                    </div>
+                </a>
+            </div>
+            {% endif %}
 
-                <small>
-                    {{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}
-                </small>
+            <div class="p-6 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-headline-sm text-headline-sm text-primary font-semibold m-0">Nomad Circle</h3>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">{{ follower_count }}</span>
+                </div>
+                {% if nomad_circle %}
+                <div class="flex flex-col gap-3">
+                    {% for member in nomad_circle %}
+                    <a href="{{ url_for('profiles.profile', username=member.username) }}" class="flex items-center gap-3 no-underline group">
+                        {{ avatar(member, 'w-10 h-10') }}
+                        <div class="flex flex-col min-w-0">
+                            <span class="font-label-md text-label-md text-on-surface font-semibold truncate group-hover:text-secondary transition-colors">{{ member.username }}</span>
+                            <span class="font-body-sm text-body-sm text-on-surface-variant truncate">@{{ member.username }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="font-body-sm text-body-sm text-on-surface-variant m-0">No one in the circle yet.</p>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
 
-            </article>
+    <div class="flex flex-wrap items-center justify-between gap-4 mt-10 mx-2 sm:mx-4">
+        <a href="{{ url_for('locations.home') }}" class="inline-flex items-center gap-2 font-label-lg text-label-lg text-secondary hover:underline">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            Back to Home
+        </a>
+        {% if current_user.is_authenticated and current_user.id == user.id %}
+        <a href="{{ url_for('auth.account_settings') }}" class="inline-flex items-center gap-2 font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors">
+            <span class="material-symbols-outlined text-[18px]">settings</span>
+            Account Settings
+        </a>
+        {% endif %}
+    </div>
 
-            <hr>
-
-        {% endfor %}
-
-    {% else %}
-
-        <p>
-            This traveller hasn't posted anything yet.
-        </p>
-
-    {% endif %}
-
-    <a href="{{ url_for('locations.home') }}">
-        ← Back to Home
-    </a>
+</div>
 
 {% endblock %}

@@ -92,6 +92,13 @@ def logout():
 
     return redirect(url_for("locations.home"))
 
+@auth.route("/account/settings")
+@login_required
+def account_settings():
+
+    return render_template("auth/settings.html")
+
+
 @auth.route("/account/delete", methods=["POST"])
 @login_required
 def delete_account():
