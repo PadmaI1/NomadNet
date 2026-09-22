@@ -4,7 +4,12 @@ import requests
 from models import db, Country, Follow, Post, Location, LocationFollow, Like, Comment, User
 from forms import CreatePostForm
 from datetime import datetime, timedelta
-from utils.location_enricher import enrich_locations, enrich_location
+from utils.location_enricher import (
+    enrich_locations,
+    enrich_location,
+    get_location_emoji,
+    get_fallback_image
+)
 from routes.api import calculate_distance
 
 
@@ -299,6 +304,8 @@ def search_locations():
             "locations/search_locations.html",
             locations=[],
             api_locations=[],
+            all_matches=[],
+            top_location=None,
             query=""
         )
 
@@ -334,9 +341,11 @@ def search_locations():
             or result["address"].get("municipality")
         )
 
+        location_type = result.get("addresstype") or "location"
+
         location_data = {
             "name": result.get("name"),
-            "type": result.get("addresstype"),
+            "type": location_type,
             "country": result["address"].get("country"),
             "city": city,
             "latitude": float(result["lat"]),
@@ -344,15 +353,51 @@ def search_locations():
             "place_id": result.get("place_id"),
             "provider": "openstreetmap",
             "provider_id": str(result["place_id"]),
-            "display_name": result.get("display_name")
+            "display_name": result.get("display_name"),
+            "emoji": get_location_emoji(location_type)
         }
 
         api_locations.append(location_data)
+
+    all_matches = [
+        {
+            "kind": "saved",
+            "id": location.id,
+            "name": location.name,
+            "type": location.type,
+            "country": location.country,
+            "city": location.city,
+            "on_nomadnet": True,
+            **enrich_location(location)
+        }
+        for location in locations
+    ] + [
+        {
+            **item,
+            "on_nomadnet": False,
+            "rating": None,
+            "active_nomads": 0,
+            "post_count": 0,
+            "hero_image": get_fallback_image(item["type"]),
+            "description": (
+                item["display_name"]
+                if item["display_name"] and item["display_name"] != item["name"]
+                else ", ".join(
+                    part for part in [item["city"], item["country"]] if part
+                )
+            )
+        }
+        for item in api_locations
+    ]
+
+    top_location = all_matches[0] if all_matches else None
 
     return render_template(
         "locations/search_locations.html",
         locations=locations,
         api_locations=api_locations,
+        all_matches=all_matches,
+        top_location=top_location,
         query=query
     )
 

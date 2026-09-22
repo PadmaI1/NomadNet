@@ -28,6 +28,41 @@ def get_location_emoji(location_type: str) -> str:
     return LOCATION_TYPE_EMOJIS.get(location_type.lower(), "📍")
 
 
+LOCATION_TYPE_FALLBACK_IMAGES = {
+    "city": "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1200&q=80",
+    "mountain": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200&q=80",
+    "beach": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80",
+    "coast": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80",
+    "island": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200&q=80",
+    "forest": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80",
+    "nature": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80",
+    "park": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&q=80",
+    "desert": "https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1200&q=80",
+    "lake": "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=1200&q=80",
+    "village": "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1200&q=80",
+    "temple": "https://images.unsplash.com/photo-1548013146-72479768bada?w=1200&q=80",
+    "museum": "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=1200&q=80",
+    "restaurant": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80",
+    "cafe": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200&q=80",
+}
+
+LOCATION_TYPE_FALLBACK_DEFAULT = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&q=80"
+
+
+def get_fallback_image(location_type: str) -> str:
+    """A representative photo for a location type, used when a place has
+    no hero image or user-submitted photos yet (e.g. it isn't on
+    NomadNet). Mirrors the same Unsplash-sourced convention already used
+    for seeded locations' hero_image_url."""
+    if not location_type:
+        return LOCATION_TYPE_FALLBACK_DEFAULT
+
+    return LOCATION_TYPE_FALLBACK_IMAGES.get(
+        location_type.lower(),
+        LOCATION_TYPE_FALLBACK_DEFAULT
+    )
+
+
 def calculate_location_rating(location, days=30) -> float:
     """
     Calculate location rating from engagement metrics.
@@ -126,7 +161,7 @@ def enrich_location(location) -> dict:
         "rating": calculate_location_rating(location),
         "active_nomads": get_active_nomads_count(location),
         "post_count": len(location.posts),
-        "hero_image": get_hero_image(location),
+        "hero_image": get_hero_image(location) or get_fallback_image(location.type),
         "description": generate_location_description(location),
     }
 
