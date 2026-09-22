@@ -34,9 +34,10 @@
             action="{{ url_for('auth.delete_account') }}"
             onsubmit="return confirm('Are you sure you want to permanently delete your account? This action cannot be undone.');"
             class="self-start"
+            novalidate
         >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="px-5 py-2.5 rounded-full bg-error-container hover:bg-error/20 text-error font-label-lg text-label-lg transition-colors">Delete My Account</button>
+            {{ delete_form.hidden_tag() }}
+            {{ delete_form.submit(class="px-5 py-2.5 rounded-full bg-error-container hover:bg-error/20 text-error font-label-lg text-label-lg transition-colors") }}
         </form>
     </div>
 

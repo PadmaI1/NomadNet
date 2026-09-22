@@ -9,19 +9,16 @@
 
     <h1 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mb-8">Edit Post</h1>
 
-    <form method="POST" class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-5">
+    <form method="POST" class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-5" novalidate>
 
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {{ form.hidden_tag() }}
 
         <div class="flex flex-col gap-1.5">
-            <label for="content" class="font-label-md text-label-md text-on-surface-variant">Your post</label>
-            <textarea
-                id="content"
-                name="content"
-                rows="5"
-                required
-                class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary resize-y"
-            >{{ post.content }}</textarea>
+            {{ form.content.label(class="font-label-md text-label-md text-on-surface-variant") }}
+            {{ form.content(rows=5, class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary resize-y") }}
+            {% if form.content.errors %}
+                <span class="text-error font-body-sm text-body-sm">{{ form.content.errors[0] }}</span>
+            {% endif %}
         </div>
 
         <div class="flex flex-col gap-1.5 relative">
@@ -33,7 +30,10 @@
                 autocomplete="off"
                 class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary"
             >
-            <input type="hidden" id="location_id" name="location_id" value="{{ post.location.id }}">
+            {{ form.location_id(id="location_id") }}
+            {% if form.location_id.errors %}
+                <span class="text-error font-body-sm text-body-sm">{{ form.location_id.errors[0] }}</span>
+            {% endif %}
             <div id="location_results" class="absolute top-full inset-x-0 mt-1 bg-surface rounded-xl shadow-lg z-20 max-h-60 overflow-y-auto"></div>
             <p id="selected_location" class="font-label-sm text-label-sm text-surface-tint font-semibold m-0">Selected: {{ post.location.name }}, {{ post.location.country }}</p>
         </div>
@@ -64,7 +64,7 @@
         </div>
         {% endif %}
 
-        <button type="submit" class="w-full py-3 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-lg text-label-lg transition-colors">Update Post</button>
+        {{ form.submit(class="w-full py-3 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-lg text-label-lg transition-colors") }}
 
     </form>
 

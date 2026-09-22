@@ -283,24 +283,33 @@
             {% if current_user.is_authenticated %}
             <div class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-5">
                 <h3 class="font-headline-sm text-headline-sm text-primary font-bold m-0">✍️ Share Your Travel Experience</h3>
-                <form action="{{ url_for('posts.create_post') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-4">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <form action="{{ url_for('posts.create_post') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-4" novalidate>
+                    {{ form.hidden_tag() }}
                     <div class="flex flex-col gap-1.5">
-                        <label for="content" class="font-label-md text-label-md text-on-surface-variant">What's on your mind?</label>
-                        <textarea id="content" name="content" rows="4" required placeholder="Share your travel experience, discoveries, and moments..." class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary resize-y"></textarea>
+                        {{ form.content.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                        {{ form.content(rows=4, class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary resize-y") }}
+                        {% if form.content.errors %}
+                            <span class="text-error font-body-sm text-body-sm">{{ form.content.errors[0] }}</span>
+                        {% endif %}
                     </div>
                     <div class="flex flex-col gap-1.5 relative">
                         <label for="location_search" class="font-label-md text-label-md text-on-surface-variant">📍 Location</label>
                         <input type="text" id="location_search" placeholder="Search for or create a location..." autocomplete="off" class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary">
-                        <input type="hidden" id="location_id" name="location_id">
+                        {{ form.location_id(id="location_id") }}
+                        {% if form.location_id.errors %}
+                            <span class="text-error font-body-sm text-body-sm">{{ form.location_id.errors[0] }}</span>
+                        {% endif %}
                         <div id="location_results" class="absolute top-full inset-x-0 mt-1 bg-surface rounded-xl shadow-lg z-20 max-h-60 overflow-y-auto"></div>
                         <p id="selected_location" class="font-label-sm text-label-sm text-surface-tint font-semibold m-0"></p>
                     </div>
                     <div class="flex flex-col gap-1.5">
-                        <label for="media" class="font-label-md text-label-md text-on-surface-variant">📸 Images or Videos (optional)</label>
-                        <input type="file" id="media" name="media" accept="image/*,video/*" multiple class="font-body-sm text-body-sm text-on-surface-variant">
+                        {{ form.media.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                        {{ form.media(accept="image/*,video/*", class="font-body-sm text-body-sm text-on-surface-variant") }}
+                        {% if form.media.errors %}
+                            <span class="text-error font-body-sm text-body-sm">{{ form.media.errors[0] }}</span>
+                        {% endif %}
                     </div>
-                    <button type="submit" class="w-full py-3 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-lg text-label-lg transition-all">Post Experience</button>
+                    {{ form.submit(class="w-full py-3 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-lg text-label-lg transition-all") }}
                 </form>
             </div>
             {% endif %}

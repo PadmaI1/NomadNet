@@ -3,6 +3,7 @@ from flask_login import login_required, login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from models import Comment, db, User, Post, Comment, Like, LocationFollow, Notification, Follow
+from forms import LoginForm, SignupForm, DeleteAccountForm, LogoutForm
 
 
 auth = Blueprint("auth", __name__)
@@ -10,34 +11,31 @@ auth = Blueprint("auth", __name__)
 
 @auth.route("/signup", methods=["GET", "POST"])
 def signup():
+    """
+    User registration route.
 
-    if request.method == "POST":
+    GET: Show signup form.
+    POST: Validate form, then create user if validation passes.
 
-        username = request.form["username"]
-        email = request.form["email"]
-        password = request.form["password"]
+    The SignupForm automatically:
+    - Validates that username/email/password are not empty
+    - Checks that username doesn't already exist
+    - Checks that email doesn't already exist
+    - Checks that passwords match
+    - Checks password is at least 6 characters
 
-        if not username or not email or not password:
-            flash("Please fill in all fields.")
-            return render_template("auth/signup.html")
+    If any validation fails, form.validate_on_submit() returns False,
+    and form.errors contains the error messages.
+    """
+    form = SignupForm()
 
-        existing_username = User.query.filter_by(username=username).first()
-
-        if existing_username:
-            flash("Username already exists. Please choose a different username.")
-            return render_template("auth/signup.html")
-
-        existing_email = User.query.filter_by(email=email).first()
-
-        if existing_email:
-            flash("Email already exists. Please choose a different email.")
-            return render_template("auth/signup.html")
-
-        hashed_password = generate_password_hash(password)
+    if form.validate_on_submit():
+        # Validation passed. Data is clean and safe.
+        hashed_password = generate_password_hash(form.password.data)
 
         user = User(
-            username=username,
-            email=email,
+            username=form.username.data,
+            email=form.email.data,
             password=hashed_password
         )
 
@@ -45,63 +43,84 @@ def signup():
         db.session.commit()
 
         flash("Account created successfully! Please log in.")
-
         return redirect(url_for("auth.login"))
 
-    return render_template("auth/signup.html")
+    # GET request OR POST with validation errors
+    return render_template("auth/signup.html", form=form)
 
 
 @auth.route("/login", methods=["GET", "POST"])
 def login():
+    """
+    User login route.
 
-    if request.method == "POST":
+    GET: Show login form.
+    POST: Validate form, then check password and log in if correct.
 
-        username = request.form["username"]
-        password = request.form["password"]
+    The LoginForm validates that username and password are not empty.
+    We still need to check the password is correct (that's not a form validator,
+    that's application logic).
+    """
+    form = LoginForm()
 
-        user = User.query.filter_by(
-            username=username
-        ).first()
+    if form.validate_on_submit():
+        # Form validation passed. Look up the user.
+        user = User.query.filter_by(username=form.username.data).first()
 
-        if user is None:
+        if user is None or not check_password_hash(user.password, form.password.data):
             flash("Invalid username or password")
-            return render_template("auth/login.html")
-
-        if not check_password_hash(
-            user.password,
-            password
-        ):
-            flash("Invalid username or password")
-            return render_template("auth/login.html")
+            # Don't clear the form — user might just have wrong password
+            return render_template("auth/login.html", form=form)
 
         login_user(user)
-
         flash("Logged in successfully!")
-
         return redirect(url_for("locations.home"))
 
-    return render_template("auth/login.html")
+    # GET request OR POST with validation errors
+    return render_template("auth/login.html", form=form)
 
 
 @auth.route("/logout", methods=["POST"])
 def logout():
+    """
+    User logout route.
 
-    logout_user()
+    We accept only POST (not GET) to prevent URL-based attacks.
+    The LogoutForm holds the CSRF token, protecting this route.
+    """
+    form = LogoutForm()
 
-    flash("Logged out successfully!")
+    if form.validate_on_submit():
+        logout_user()
+        flash("Logged out successfully!")
 
     return redirect(url_for("locations.home"))
+
 
 @auth.route("/account/settings")
 @login_required
 def account_settings():
-
-    return render_template("auth/settings.html")
+    """Settings page for the logged-in user."""
+    form = DeleteAccountForm()
+    return render_template("auth/settings.html", delete_form=form)
 
 
 @auth.route("/account/delete", methods=["POST"])
 @login_required
 def delete_account():
+    """
+    Delete the user's account and all associated data.
+
+    This is a destructive operation, so:
+    1. We require POST (not GET)
+    2. We require CSRF token (form validation)
+    3. We cascade-delete all user data
+    """
+    form = DeleteAccountForm()
+
+    if not form.validate_on_submit():
+        flash("Delete request failed. Please try again.")
+        return redirect(url_for("auth.account_settings"))
 
     user = current_user
 

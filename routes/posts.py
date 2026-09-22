@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from requests import post
 
 from models import PostMedia, db, Post, Comment, Like, Location, Notification
+from forms import CreatePostForm, EditPostForm, CreateCommentForm
 import os
 import uuid
 
@@ -71,82 +72,86 @@ ALLOWED_VIDEO_EXTENSIONS = {"mp4", "webm", "mov"}
 @posts.route("/posts/create", methods=["POST"])
 @login_required
 def create_post():
-    content = request.form.get("content")
-    location_id = request.form.get("location_id")
-    media_files = request.files.getlist("media")
+    """
+    Create a new post.
 
-    if not location_id:
-        flash("Please select a location.")
-        return redirect(url_for("locations.home"))
+    The CreatePostForm validates:
+    - content is not empty and is < 5000 chars
+    - location_id is provided and is not empty
+    - media files (if provided) are valid image/video extensions
 
-    if not content.strip():
-        flash("Post cannot be empty.")
-        return redirect(url_for("locations.home"))
+    Request flow:
+    1. Form validates all inputs
+    2. If validation fails, form.validate_on_submit() returns False
+    3. If validation passes, we process the form data
+    4. Check that location exists in database
+    5. Save media files to disk
+    6. Create Post and PostMedia database records
+    7. Commit and redirect
+    """
+    form = CreatePostForm()
 
-    location = Location.query.get(location_id)
+    if form.validate_on_submit():
+        # Form validated. Get the location and verify it exists.
+        location = Location.query.get(int(form.location_id.data))
 
-    if not location:
-        flash("Invalid location.")
-        return redirect(url_for("locations.home"))
-
-    media_type = None
-    extension = None
-
-    validated_media = []
-
-    for media_file in media_files:
-
-        if not media_file.filename:
-            continue
-
-        extension = media_file.filename.rsplit(".", 1)[1].lower()
-
-        if extension in ALLOWED_IMAGE_EXTENSIONS:
-            media_type = "image"
-
-        elif extension in ALLOWED_VIDEO_EXTENSIONS:
-            media_type = "video"
-
-        else:
-            flash("Invalid image or video format.")
+        if not location:
+            flash("Invalid location.")
             return redirect(url_for("locations.home"))
 
-        validated_media.append(
-            (media_file, extension, media_type)
+        # Create the post with validated data
+        post = Post(
+            content=form.content.data.strip(),
+            user_id=current_user.id,
+            location_id=location.id
         )
 
-    post = Post(
-        content=content.strip(),
-        user_id=current_user.id,
-        location_id=location.id
-    )
+        db.session.add(post)
+        db.session.flush()  # Flush to get post.id before adding media
 
-    db.session.add(post)
-    db.session.flush()
+        # Process media files
+        media_files = request.files.getlist("media")
 
-    for index, (media_file, extension, media_type) in enumerate(validated_media):
+        for index, media_file in enumerate(media_files):
 
-        filename = f"{uuid.uuid4().hex}.{extension}"
+            if not media_file.filename:
+                continue
 
-        filepath = os.path.join(
-            current_app.config["UPLOAD_FOLDER"],
-            filename
-        )
+            extension = media_file.filename.rsplit(".", 1)[1].lower()
 
-        media_file.save(filepath)
+            # Determine media type based on extension
+            if extension in ALLOWED_IMAGE_EXTENSIONS:
+                media_type = "image"
+            elif extension in ALLOWED_VIDEO_EXTENSIONS:
+                media_type = "video"
+            else:
+                # This should not happen because form validation already checked
+                continue
 
-        media = PostMedia(
-            post_id=post.id,
-            filename=filename,
-            media_type=media_type,
-            display_order=index
-        )
+            filename = f"{uuid.uuid4().hex}.{extension}"
+            filepath = os.path.join(
+                current_app.config["UPLOAD_FOLDER"],
+                filename
+            )
 
-        db.session.add(media)
+            media_file.save(filepath)
 
-    db.session.commit()
+            media = PostMedia(
+                post_id=post.id,
+                filename=filename,
+                media_type=media_type,
+                display_order=index
+            )
 
-    flash("Post created successfully!")
+            db.session.add(media)
+
+        db.session.commit()
+        flash("Post created successfully!")
+        return redirect(url_for("locations.home"))
+
+    # If GET or form validation failed, redirect home
+    # (forms are usually submitted via home page)
+    flash("Failed to create post. Please try again.")
     return redirect(url_for("locations.home"))
 
 
@@ -186,7 +191,23 @@ def delete_post(post_id):
 @posts.route("/posts/<int:post_id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_post(post_id):
+    """
+    Edit an existing post.
 
+    Security checks:
+    - @login_required ensures user is logged in
+    - Check that post exists (404 if not)
+    - Check that current_user owns the post (403 if not)
+
+    Form validation:
+    - content must not be empty
+    - location_id must be provided and valid
+    - media files (if provided) must be valid formats
+
+    Additional logic:
+    - Handle deletion of existing media (user checks boxes to delete)
+    - Handle addition of new media (user uploads new files)
+    """
     post = Post.query.get(post_id)
 
     if post is None:
@@ -195,29 +216,22 @@ def edit_post(post_id):
     if post.user_id != current_user.id:
         abort(403)
 
-    if request.method == "POST":
+    form = EditPostForm()
 
-        content = request.form["content"]
-        location_id = request.form["location_id"]
+    if form.validate_on_submit():
 
-        delete_media_ids = request.form.getlist("delete_media")
-
-        if not content.strip():
-            flash("Post cannot be empty.")
-            return redirect(
-                url_for("posts.edit_post", post_id=post.id)
-            )
-
-        location = Location.query.get(location_id)
+        location = Location.query.get(int(form.location_id.data))
 
         if location is None:
             flash("Invalid location selected.")
-            return redirect(
-                url_for("posts.edit_post", post_id=post.id)
-            )
+            return redirect(url_for("posts.edit_post", post_id=post.id))
 
-        post.content = content.strip()
+        # Update post content and location
+        post.content = form.content.data.strip()
         post.location_id = location.id
+
+        # Delete media that user checked for deletion
+        delete_media_ids = request.form.getlist("delete_media")
 
         for media_id in delete_media_ids:
 
@@ -239,14 +253,54 @@ def edit_post(post_id):
 
             db.session.delete(media)
 
+        # Handle new media uploads
+        media_files = request.files.getlist("media")
+        existing_media_count = len(post.media)
+
+        for index, media_file in enumerate(media_files):
+
+            if not media_file.filename:
+                continue
+
+            extension = media_file.filename.rsplit(".", 1)[1].lower()
+
+            if extension in ALLOWED_IMAGE_EXTENSIONS:
+                media_type = "image"
+            elif extension in ALLOWED_VIDEO_EXTENSIONS:
+                media_type = "video"
+            else:
+                continue
+
+            filename = f"{uuid.uuid4().hex}.{extension}"
+            filepath = os.path.join(
+                current_app.config["UPLOAD_FOLDER"],
+                filename
+            )
+
+            media_file.save(filepath)
+
+            media = PostMedia(
+                post_id=post.id,
+                filename=filename,
+                media_type=media_type,
+                display_order=existing_media_count + index
+            )
+
+            db.session.add(media)
+
         db.session.commit()
 
         flash("Post updated successfully.")
-
         return redirect(url_for("locations.home"))
+
+    # GET request: populate form with current post data
+    if request.method == "GET":
+        form.content.data = post.content
+        form.location_id.data = str(post.location_id)
 
     return render_template(
         "posts/edit_post.html",
+        form=form,
         post=post,
         locations=Location.query.all()
     )
@@ -254,7 +308,12 @@ def edit_post(post_id):
 
 @posts.route("/posts/<int:post_id>")
 def post_detail(post_id):
+    """
+    Display a single post with all comments.
 
+    This route instantiates CreateCommentForm so the template
+    can render the comment form with proper CSRF protection.
+    """
     post = Post.query.get(post_id)
 
     if post is None:
@@ -272,53 +331,66 @@ def post_detail(post_id):
         if existing_like:
             is_liked = True
 
+    form = CreateCommentForm()
+
     return render_template(
         "posts/post_details.html",
         post=post,
-        is_liked=is_liked
+        is_liked=is_liked,
+        form=form
     )
 
 
 @posts.route("/posts/<int:post_id>/comments/create", methods=["POST"])
 @login_required
 def create_comment(post_id):
+    """
+    Create a comment on a post.
 
+    Form validation:
+    - content must not be empty and must be < 1000 chars
+
+    Database logic:
+    - Create Comment record
+    - Create Notification if the post owner is not the commenter
+    """
     post = Post.query.get(post_id)
 
     if post is None:
         abort(404)
 
-    content = request.form["content"]
+    form = CreateCommentForm()
 
-    if not content.strip():
-        flash("Comment cannot be empty.")
-        return redirect(
-            url_for("posts.post_detail", post_id=post.id)
+    if form.validate_on_submit():
+
+        comment = Comment(
+            content=form.content.data.strip(),
+            user_id=current_user.id,
+            post_id=post.id
         )
 
-    comment = Comment(
-        content=content.strip(),
-        user_id=current_user.id,
-        post_id=post.id
-    )
+        db.session.add(comment)
+        db.session.flush()
 
-    db.session.add(comment)
-    db.session.flush()
+        # Notify the post owner (unless they're commenting on their own post)
+        if post.user_id != current_user.id:
+            notification = Notification(
+                recipient_id=post.user_id,
+                actor_id=current_user.id,
+                notification_type="comment",
+                post_id=post.id,
+                comment_id=comment.id
+            )
 
-    if post.user_id != current_user.id:
-        notification = Notification(
-            recipient_id=post.user_id,
-            actor_id=current_user.id,
-            notification_type="comment",
-            post_id=post.id,
-            comment_id=comment.id
-        )
+            db.session.add(notification)
 
-        db.session.add(notification)
+        db.session.commit()
 
-    db.session.commit()
+        flash("Comment added successfully.")
 
-    flash("Comment added successfully.")
+    else:
+        if form.errors:
+            flash(form.errors['content'][0])
 
     return redirect(
         url_for("posts.post_detail", post_id=post.id)

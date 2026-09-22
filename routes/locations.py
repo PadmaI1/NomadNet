@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, abort, request, flash, redirect, u
 from flask_login import login_required, current_user
 import requests
 from models import db, Country, Follow, Post, Location, LocationFollow, Like, Comment, User
+from forms import CreatePostForm
 from datetime import datetime, timedelta
 from utils.location_enricher import enrich_locations, enrich_location
 from routes.api import calculate_distance
@@ -144,9 +145,12 @@ def home():
         Post.created_at.desc()
     ).limit(60).all()
 
+    form = CreatePostForm()
+
     return render_template(
         "locations/home.html",
         posts=posts,
+        form=form,
         active_tab="explore",
         is_for_you=False,
         **_build_discovery_context()
@@ -189,9 +193,12 @@ def for_you():
 
         posts = []
 
+    form = CreatePostForm()
+
     return render_template(
         "locations/home.html",
         posts=posts,
+        form=form,
         active_tab="foryou",
         is_for_you=True,
         **_build_discovery_context()

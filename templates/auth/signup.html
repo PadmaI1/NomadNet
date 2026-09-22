@@ -12,25 +12,42 @@
             <h1 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight">Create your NomadNet account</h1>
         </div>
 
-        <form method="POST" class="flex flex-col gap-4">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <form method="POST" class="flex flex-col gap-4" novalidate>
+            {{ form.hidden_tag() }}
 
             <div class="flex flex-col gap-1.5">
-                <label for="username" class="font-label-md text-label-md text-on-surface-variant">Username</label>
-                <input type="text" id="username" name="username" class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary">
+                {{ form.username.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                {{ form.username(class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary") }}
+                {% if form.username.errors %}
+                    <span class="text-error font-body-sm text-body-sm">{{ form.username.errors[0] }}</span>
+                {% endif %}
             </div>
 
             <div class="flex flex-col gap-1.5">
-                <label for="email" class="font-label-md text-label-md text-on-surface-variant">Email</label>
-                <input type="email" id="email" name="email" class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary">
+                {{ form.email.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                {{ form.email(class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary") }}
+                {% if form.email.errors %}
+                    <span class="text-error font-body-sm text-body-sm">{{ form.email.errors[0] }}</span>
+                {% endif %}
             </div>
 
             <div class="flex flex-col gap-1.5">
-                <label for="password" class="font-label-md text-label-md text-on-surface-variant">Password</label>
-                <input type="password" id="password" name="password" class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary">
+                {{ form.password.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                {{ form.password(class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary") }}
+                {% if form.password.errors %}
+                    <span class="text-error font-body-sm text-body-sm">{{ form.password.errors[0] }}</span>
+                {% endif %}
             </div>
 
-            <button type="submit" class="w-full mt-2 py-3 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-lg text-label-lg transition-colors">Sign up</button>
+            <div class="flex flex-col gap-1.5">
+                {{ form.confirm_password.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                {{ form.confirm_password(class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary") }}
+                {% if form.confirm_password.errors %}
+                    <span class="text-error font-body-sm text-body-sm">{{ form.confirm_password.errors[0] }}</span>
+                {% endif %}
+            </div>
+
+            {{ form.submit(class="w-full mt-2 py-3 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-lg text-label-lg transition-colors") }}
         </form>
 
         <p class="font-body-sm text-body-sm text-on-surface-variant text-center m-0">Already have an account? <a href="{{ url_for('auth.login') }}" class="text-secondary font-semibold hover:underline">Log in</a></p>

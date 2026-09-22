@@ -60,7 +60,7 @@
                     <span class="material-symbols-outlined text-[16px]">edit</span>
                     Edit
                 </a>
-                <form action="{{ url_for('posts.delete_post', post_id=post.id) }}" method="POST">
+                <form action="{{ url_for('posts.delete_post', post_id=post.id) }}" method="POST" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-error-container hover:bg-error/20 text-error font-label-sm text-label-sm transition-colors">
                         <span class="material-symbols-outlined text-[16px]">delete</span>
@@ -76,18 +76,14 @@
         <h2 class="font-headline-sm text-headline-sm text-primary font-bold">Comments</h2>
 
         {% if current_user.is_authenticated %}
-        <form action="{{ url_for('posts.create_comment', post_id=post.id) }}" method="POST" class="flex flex-col gap-3 p-5 rounded-2xl bg-surface-container-lowest shadow-sm">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <label for="content" class="font-label-md text-label-md text-on-surface-variant">Add a comment</label>
-            <textarea
-                id="content"
-                name="content"
-                rows="3"
-                placeholder="Write a comment..."
-                required
-                class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary resize-y"
-            ></textarea>
-            <button type="submit" class="self-end px-5 py-2.5 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md transition-colors">Comment</button>
+        <form action="{{ url_for('posts.create_comment', post_id=post.id) }}" method="POST" class="flex flex-col gap-3 p-5 rounded-2xl bg-surface-container-lowest shadow-sm" novalidate>
+            {{ form.hidden_tag() }}
+            {{ form.content.label(class="font-label-md text-label-md text-on-surface-variant") }}
+            {{ form.content(class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary resize-y") }}
+            {% if form.content.errors %}
+                <span class="text-error font-body-sm text-body-sm">{{ form.content.errors[0] }}</span>
+            {% endif %}
+            {{ form.submit(class="self-end px-5 py-2.5 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md transition-colors") }}
         </form>
         {% else %}
         <p class="font-body-sm text-body-sm text-on-surface-variant">Please log in to comment.</p>
