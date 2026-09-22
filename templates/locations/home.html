@@ -184,7 +184,7 @@
                     <div class="relative flex items-center gap-2 p-1.5 pr-3 rounded-full bg-surface shadow-md hover:scale-105 transition-transform">
                         {{ avatar(pin_posts[0].author, 'w-7 h-7') }}
                         <div class="flex flex-col">
-                            <span class="font-label-sm text-label-sm font-bold text-primary leading-tight">{{ pin_posts[0].location.name if pin_posts[0].location else 'Field note' }}</span>
+                            <span class="font-label-sm text-label-sm font-bold text-primary leading-tight">{{ pin_posts[0].location.name if pin_posts[0].location else 'Post' }}</span>
                             <span class="font-label-sm text-[10px] text-on-surface-variant">by @{{ pin_posts[0].author.username }}</span>
                         </div>
                     </div>
@@ -272,7 +272,7 @@
             <span class="font-label-sm text-label-sm text-surface-tint uppercase tracking-widest font-bold">Your Places, Your People</span>
             <h2 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mt-1">For You — Posts From Places &amp; People You Follow</h2>
             {% else %}
-            <span class="font-label-sm text-label-sm text-surface-tint uppercase tracking-widest font-bold">Unfiltered Field Notes</span>
+            <span class="font-label-sm text-label-sm text-surface-tint uppercase tracking-widest font-bold">Unfiltered Posts</span>
             <h2 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight mt-1">Explore — Collective Posts From Every Corner</h2>
             {% endif %}
         </div>

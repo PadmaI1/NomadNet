@@ -2,11 +2,23 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from flask_login import login_required, login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
-from models import Comment, db, User, Post, Comment, Like, LocationFollow, Notification, Follow
+from models import Comment, db, User, Post, Comment, Like, LocationFollow, Notification, Follow, Location
 from forms import LoginForm, SignupForm, DeleteAccountForm, LogoutForm
 
 
 auth = Blueprint("auth", __name__)
+
+
+def _auth_showcase():
+    """A handful of random hero location images, cycled behind the login/signup panels."""
+    hero_locations = Location.query.filter(
+        Location.hero_image_url.isnot(None)
+    ).order_by(db.func.random()).limit(6).all()
+
+    return {
+        "hero_location": hero_locations[0] if hero_locations else None,
+        "hero_locations": hero_locations,
+    }
 
 
 @auth.route("/signup", methods=["GET", "POST"])
@@ -46,7 +58,7 @@ def signup():
         return redirect(url_for("auth.login"))
 
     # GET request OR POST with validation errors
-    return render_template("auth/signup.html", form=form)
+    return render_template("auth/signup.html", form=form, **_auth_showcase())
 
 
 @auth.route("/login", methods=["GET", "POST"])
@@ -70,14 +82,14 @@ def login():
         if user is None or not check_password_hash(user.password, form.password.data):
             flash("Invalid username or password")
             # Don't clear the form — user might just have wrong password
-            return render_template("auth/login.html", form=form)
+            return render_template("auth/login.html", form=form, **_auth_showcase())
 
         login_user(user)
         flash("Logged in successfully!")
         return redirect(url_for("locations.home"))
 
     # GET request OR POST with validation errors
-    return render_template("auth/login.html", form=form)
+    return render_template("auth/login.html", form=form, **_auth_showcase())
 
 
 @auth.route("/logout", methods=["POST"])

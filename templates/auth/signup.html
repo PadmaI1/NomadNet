@@ -1,58 +1,142 @@
 {% extends "base.html" %}
 
-{% block title %}Sign Up — NomadNet{% endblock %}
+{% block title %}Join NomadNet{% endblock %}
 
 {% block content %}
 
-<div class="max-w-md mx-auto w-full px-margin-mobile lg:px-margin py-16 lg:py-24">
+<div class="w-full bg-primary -mt-20 pt-20 pb-space-xxl">
+    <div class="max-w-[1200px] mx-auto px-margin-mobile lg:px-margin pt-space-xl lg:pt-space-xxl">
 
-    <div class="p-8 sm:p-10 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-6">
-        <div class="flex flex-col gap-1 text-center">
-            <span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest font-bold">Join the Collective</span>
-            <h1 class="font-headline-xl text-headline-xl text-primary font-bold tracking-tight">Create your NomadNet account</h1>
+        <div class="grid lg:grid-cols-2 rounded-3xl overflow-hidden shadow-2xl bg-surface-container-lowest">
+
+            <!-- ================= FORM PANEL ================= -->
+            <div class="order-2 flex flex-col justify-center p-8 sm:p-12 lg:p-14">
+                <div class="w-full max-w-sm mx-auto flex flex-col gap-6">
+
+                    <div class="flex flex-col gap-1.5">
+                        <span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest font-bold">Start Exploring</span>
+                        <h1 class="font-headline-xl text-headline-xl-mobile lg:text-headline-xl text-primary font-bold tracking-tight">Discover places through the people who've been there.</h1>
+                    </div>
+
+                    <form method="POST" class="flex flex-col gap-4" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="flex flex-col gap-1.5">
+                            {{ form.username.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">alternate_email</span>
+                                {{ form.username(class="w-full rounded-full border border-outline-variant bg-surface-container-low pl-11 pr-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary transition-shadow", autofocus=true, placeholder="nomad_handle") }}
+                            </div>
+                            {% if form.username.errors %}
+                                <span class="text-error font-body-sm text-body-sm">{{ form.username.errors[0] }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            {{ form.email.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">mail</span>
+                                {{ form.email(class="w-full rounded-full border border-outline-variant bg-surface-container-low pl-11 pr-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary transition-shadow", placeholder="you@nomadnet.earth") }}
+                            </div>
+                            {% if form.email.errors %}
+                                <span class="text-error font-body-sm text-body-sm">{{ form.email.errors[0] }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            {{ form.password.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">lock</span>
+                                {{ form.password(class="w-full rounded-full border border-outline-variant bg-surface-container-low pl-11 pr-11 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary transition-shadow", id="password-field", placeholder="At least 6 characters") }}
+                                <button type="button" id="toggle-password" aria-label="Show password" class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">
+                                    <span class="material-symbols-outlined text-[20px]" id="toggle-password-icon">visibility</span>
+                                </button>
+                            </div>
+                            {% if form.password.errors %}
+                                <span class="text-error font-body-sm text-body-sm">{{ form.password.errors[0] }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            {{ form.confirm_password.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                            <div class="relative">
+                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">lock_reset</span>
+                                {{ form.confirm_password(class="w-full rounded-full border border-outline-variant bg-surface-container-low pl-11 pr-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary transition-shadow", placeholder="Repeat your password") }}
+                            </div>
+                            {% if form.confirm_password.errors %}
+                                <span class="text-error font-body-sm text-body-sm">{{ form.confirm_password.errors[0] }}</span>
+                            {% endif %}
+                        </div>
+
+                        {{ form.submit(class="w-full mt-1 py-3.5 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-lg text-label-lg transition-colors shadow-sm hover:shadow-md") }}
+                    </form>
+
+                    <p class="font-body-sm text-body-sm text-on-surface-variant text-center m-0">Already have a NomadNet account? <a href="{{ url_for('auth.login') }}" class="text-secondary font-semibold hover:underline">Sign in here</a></p>
+                </div>
+            </div>
+
+            <!-- ================= IMAGE PANEL ================= -->
+            <div class="order-1 relative hidden lg:flex flex-col justify-between p-10 min-h-[640px] text-on-primary bg-primary overflow-hidden">
+                <div id="auth-bg-layer" class="absolute inset-0 bg-cover bg-center transition-opacity duration-700 ease-in-out"
+                     style="{% if hero_location and hero_location.hero_image_url %}background-image:url('{{ hero_location.hero_image_url }}');{% endif %}"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-primary via-primary/50 to-primary/10"></div>
+
+                <span id="auth-image-location" class="relative z-10 inline-flex items-center gap-1.5 self-start px-3 py-1.5 rounded-full bg-surface/10 backdrop-blur-md font-label-sm text-label-sm uppercase tracking-widest {% if not hero_location %}hidden{% endif %}">
+                    <span class="material-symbols-outlined text-[14px]">location_on</span> <span id="auth-image-location-name">{{ hero_location.name if hero_location }}</span>
+                </span>
+
+                <p class="relative z-10 font-headline-md text-headline-md leading-snug max-w-sm drop-shadow-sm">Join NomadNet to explore destinations, discover what travellers are saying, share your own experiences, and follow the places that matter to you.</p>
+            </div>
+
         </div>
 
-        <form method="POST" class="flex flex-col gap-4" novalidate>
-            {{ form.hidden_tag() }}
-
-            <div class="flex flex-col gap-1.5">
-                {{ form.username.label(class="font-label-md text-label-md text-on-surface-variant") }}
-                {{ form.username(class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary") }}
-                {% if form.username.errors %}
-                    <span class="text-error font-body-sm text-body-sm">{{ form.username.errors[0] }}</span>
-                {% endif %}
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                {{ form.email.label(class="font-label-md text-label-md text-on-surface-variant") }}
-                {{ form.email(class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary") }}
-                {% if form.email.errors %}
-                    <span class="text-error font-body-sm text-body-sm">{{ form.email.errors[0] }}</span>
-                {% endif %}
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                {{ form.password.label(class="font-label-md text-label-md text-on-surface-variant") }}
-                {{ form.password(class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary") }}
-                {% if form.password.errors %}
-                    <span class="text-error font-body-sm text-body-sm">{{ form.password.errors[0] }}</span>
-                {% endif %}
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                {{ form.confirm_password.label(class="font-label-md text-label-md text-on-surface-variant") }}
-                {{ form.confirm_password(class="w-full rounded-full border border-outline-variant bg-surface-container-low px-4 py-2.5 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary") }}
-                {% if form.confirm_password.errors %}
-                    <span class="text-error font-body-sm text-body-sm">{{ form.confirm_password.errors[0] }}</span>
-                {% endif %}
-            </div>
-
-            {{ form.submit(class="w-full mt-2 py-3 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-lg text-label-lg transition-colors") }}
-        </form>
-
-        <p class="font-body-sm text-body-sm text-on-surface-variant text-center m-0">Already have an account? <a href="{{ url_for('auth.login') }}" class="text-secondary font-semibold hover:underline">Log in</a></p>
     </div>
-
 </div>
 
+<script type="application/json" id="auth-image-data">{{ hero_locations | map(attribute="hero_image_url") | list | tojson }}</script>
+<script type="application/json" id="auth-image-names">{{ hero_locations | map(attribute="name") | list | tojson }}</script>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        var toggle = document.getElementById('toggle-password');
+        var field = document.getElementById('password-field');
+        var icon = document.getElementById('toggle-password-icon');
+        if (toggle && field && icon) {
+            toggle.addEventListener('click', function () {
+                var isPassword = field.getAttribute('type') === 'password';
+                field.setAttribute('type', isPassword ? 'text' : 'password');
+                icon.textContent = isPassword ? 'visibility_off' : 'visibility';
+                toggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+            });
+        }
+
+        var bgLayer = document.getElementById('auth-bg-layer');
+        var locationBadge = document.getElementById('auth-image-location');
+        var locationName = document.getElementById('auth-image-location-name');
+        var imagesEl = document.getElementById('auth-image-data');
+        var namesEl = document.getElementById('auth-image-names');
+        if (!bgLayer || !imagesEl || !namesEl) return;
+
+        var images = JSON.parse(imagesEl.textContent || '[]');
+        var names = JSON.parse(namesEl.textContent || '[]');
+        if (images.length < 2) return;
+
+        var index = 0;
+        setInterval(function () {
+            index = (index + 1) % images.length;
+            bgLayer.style.opacity = '0';
+            setTimeout(function () {
+                bgLayer.style.backgroundImage = "url('" + images[index] + "')";
+                if (locationBadge && names[index]) {
+                    locationName.textContent = names[index];
+                    locationBadge.classList.remove('hidden');
+                }
+                bgLayer.style.opacity = '1';
+            }, 700);
+        }, 5000);
+    })();
+</script>
 {% endblock %}

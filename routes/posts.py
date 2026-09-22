@@ -2,8 +2,10 @@ from flask import Blueprint, render_template, abort, request, flash, redirect, u
 from flask_login import login_required, current_user
 from requests import post
 
-from models import PostMedia, db, Post, Comment, Like, Location, Notification
+from models import PostMedia, db, Post, Comment, Like, Location, LocationFollow, Follow, Notification
 from forms import CreatePostForm, EditPostForm, CreateCommentForm
+from utils.location_enricher import enrich_location
+from datetime import datetime
 import os
 import uuid
 
@@ -309,7 +311,9 @@ def edit_post(post_id):
 @posts.route("/posts/<int:post_id>")
 def post_detail(post_id):
     """
-    Display a single post with all comments.
+    Display a single post with all comments, plus context about the
+    post's location (stats, other contributors, other posts there)
+    and the author's follow status.
 
     This route instantiates CreateCommentForm so the template
     can render the comment form with proper CSRF protection.
@@ -320,6 +324,7 @@ def post_detail(post_id):
         abort(404)
 
     is_liked = False
+    is_following_author = False
 
     if current_user.is_authenticated:
 
@@ -331,13 +336,78 @@ def post_detail(post_id):
         if existing_like:
             is_liked = True
 
+        if post.user_id != current_user.id:
+
+            existing_follow = Follow.query.filter_by(
+                follower_id=current_user.id,
+                followed_id=post.user_id
+            ).first()
+
+            if existing_follow:
+                is_following_author = True
+
+    location = post.location
+    location_context = {}
+    recent_contributors = []
+    more_posts = []
+    is_following_location = False
+
+    if location:
+
+        location_posts = Post.query.filter_by(
+            location_id=location.id
+        ).order_by(
+            Post.created_at.desc()
+        ).all()
+
+        contributor_ids = {p.user_id for p in location_posts}
+
+        seen_contributor_ids = set()
+
+        for p in location_posts:
+
+            if p.user_id == post.user_id or p.user_id in seen_contributor_ids:
+                continue
+
+            seen_contributor_ids.add(p.user_id)
+            recent_contributors.append(p.author)
+
+            if len(recent_contributors) >= 4:
+                break
+
+        more_posts = [p for p in location_posts if p.id != post.id][:4]
+
+        if current_user.is_authenticated:
+
+            existing_location_follow = LocationFollow.query.filter_by(
+                user_id=current_user.id,
+                location_id=location.id
+            ).first()
+
+            if existing_location_follow:
+                is_following_location = True
+
+        location_context = {
+            "contributor_count": len(contributor_ids),
+            "location_follower_count": LocationFollow.query.filter_by(
+                location_id=location.id
+            ).count(),
+            **enrich_location(location)
+        }
+
     form = CreateCommentForm()
 
     return render_template(
         "posts/post_details.html",
         post=post,
         is_liked=is_liked,
-        form=form
+        is_following_author=is_following_author,
+        is_following_location=is_following_location,
+        recent_contributors=recent_contributors,
+        more_posts=more_posts,
+        now=datetime.utcnow(),
+        form=form,
+        **location_context
     )
 
 

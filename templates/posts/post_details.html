@@ -1,125 +1,338 @@
 {% extends "base.html" %}
-{% from "_macros.html" import avatar, media_url with context %}
+{% from "_macros.html" import avatar, time_ago, media_url with context %}
 
-{% block title %}{{ post.author.username }}'s post — NomadNet{% endblock %}
+{% block title %}{{ post.author.username }}'s post{% if post.location %} in {{ post.location.name }}{% endif %} — NomadNet{% endblock %}
 
 {% block content %}
 
-<div class="max-w-3xl mx-auto w-full px-margin-mobile lg:px-margin py-12 lg:py-16">
+<div class="relative w-full max-w-[1440px] mx-auto px-margin-mobile lg:px-margin pt-space-lg pb-space-xxl">
+    <div class="absolute top-12 left-1/4 w-96 h-96 bg-secondary/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+    <div class="absolute top-48 right-12 w-80 h-80 bg-primary-container/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
 
-    <article class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-5">
-        <div class="flex items-center gap-3">
-            {{ avatar(post.author, 'w-10 h-10') }}
-            <div class="flex flex-col">
-                <a href="{{ url_for('profiles.profile', username=post.author.username) }}" class="font-headline-md text-headline-md text-primary font-bold no-underline hover:underline">{{ post.author.username }}</a>
-                <span class="font-label-sm text-label-sm text-on-surface-variant">{{ post.created_at.strftime("%d %B %Y, %I:%M %p") }}</span>
-            </div>
-        </div>
-
-        <p class="font-body-lg text-body-lg text-on-surface leading-relaxed m-0">{{ post.content }}</p>
-
-        {% if post.media %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 rounded-xl overflow-hidden">
-            {% for media in post.media %}
-            {% if media.media_type == "image" %}
-            <img src="{{ media_url(media.filename) }}" alt="Image from {{ post.location.name }}" class="w-full h-72 object-cover rounded-lg">
-            {% elif media.media_type == "video" %}
-            <video controls class="w-full h-72 object-cover rounded-lg">
-                <source src="{{ media_url(media.filename) }}" type="video/{{ media.filename.rsplit('.', 1)[1].lower() }}">
-                Your browser does not support video playback.
-            </video>
-            {% endif %}
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-low border-l-4 border-secondary w-fit">
-            <span class="material-symbols-outlined text-secondary text-[18px]">place</span>
-            <a href="{{ url_for('locations.location_page', location_id=post.location.id) }}" class="font-label-md text-label-md text-primary font-semibold no-underline hover:underline">{{ post.location.name }}</a>
-        </div>
-
-        <div class="pt-4 border-t border-surface-container-high flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-                {% if current_user.is_authenticated %}
-                <button type="button" id="like_button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md transition-colors">
-                    <span class="material-symbols-outlined text-[18px]">{{ 'favorite' if is_liked else 'favorite_border' }}</span>
-                    <span>{% if is_liked %}Unlike{% else %}Like{% endif %}</span>
-                </button>
-                {% else %}
-                <p class="font-body-sm text-body-sm text-on-surface-variant m-0">Please log in to like this post.</p>
-                {% endif %}
-                <span class="font-label-md text-label-md text-on-surface-variant flex items-center gap-1.5">
-                    <span class="material-symbols-outlined text-[18px]">favorite</span>
-                    <span id="like_count">{{ post.likes|length }}</span> likes
-                </span>
-            </div>
-
-            {% if current_user.is_authenticated and post.user_id == current_user.id %}
-            <div class="flex items-center gap-3">
-                <a href="{{ url_for('posts.edit_post', post_id=post.id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-label-sm transition-colors">
-                    <span class="material-symbols-outlined text-[16px]">edit</span>
-                    Edit
-                </a>
-                <form action="{{ url_for('posts.delete_post', post_id=post.id) }}" method="POST" style="display: inline;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-error-container hover:bg-error/20 text-error font-label-sm text-label-sm transition-colors">
-                        <span class="material-symbols-outlined text-[16px]">delete</span>
-                        Delete
-                    </button>
-                </form>
-            </div>
+    <!-- ================= BREADCRUMB ================= -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-space-lg">
+        <div class="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant min-w-0">
+            <a href="{{ url_for('locations.home') }}" class="hover:text-primary transition-colors no-underline text-inherit shrink-0">Home</a>
+            {% if post.location %}
+            <span class="material-symbols-outlined text-[16px] shrink-0">chevron_right</span>
+            <span class="shrink-0">{{ post.location.country }}</span>
+            <span class="material-symbols-outlined text-[16px] shrink-0">chevron_right</span>
+            <a href="{{ url_for('locations.location_page', location_id=post.location.id) }}" class="text-primary font-semibold truncate no-underline hover:underline">{{ post.location.name }}</a>
+            {% else %}
+            <span class="material-symbols-outlined text-[16px] shrink-0">chevron_right</span>
+            <span class="text-primary font-semibold">Post</span>
             {% endif %}
         </div>
-    </article>
-
-    <div class="mt-10 flex flex-col gap-6">
-        <h2 class="font-headline-sm text-headline-sm text-primary font-bold">Comments</h2>
-
-        {% if current_user.is_authenticated %}
-        <form action="{{ url_for('posts.create_comment', post_id=post.id) }}" method="POST" class="flex flex-col gap-3 p-5 rounded-2xl bg-surface-container-lowest shadow-sm" novalidate>
-            {{ form.hidden_tag() }}
-            {{ form.content.label(class="font-label-md text-label-md text-on-surface-variant") }}
-            {{ form.content(class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary resize-y") }}
-            {% if form.content.errors %}
-                <span class="text-error font-body-sm text-body-sm">{{ form.content.errors[0] }}</span>
+        {% if post.location %}
+        <div class="flex items-center gap-2 shrink-0">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-label-sm">
+                <span class="text-[13px]">{{ emoji }}</span>
+                {{ post.location.name }}
+                {% if post.location.is_verified %}<span class="material-symbols-outlined text-[14px]">verified</span>{% endif %}
+            </span>
+            {% if rating %}
+            <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm">
+                <span class="material-symbols-outlined text-[14px] text-secondary">star</span>
+                {{ rating }}/5.0
+            </span>
             {% endif %}
-            {{ form.submit(class="self-end px-5 py-2.5 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md transition-colors") }}
-        </form>
-        {% else %}
-        <p class="font-body-sm text-body-sm text-on-surface-variant">Please log in to comment.</p>
-        {% endif %}
-
-        {% if post.comments %}
-        <div class="flex flex-col gap-4">
-            {% for comment in post.comments %}
-            <article class="p-5 rounded-xl bg-surface-container-low flex flex-col gap-2">
-                <div class="flex items-center justify-between gap-4">
-                    <a href="{{ url_for('profiles.profile', username=comment.author.username) }}" class="font-label-md text-label-md text-primary font-semibold no-underline hover:underline">{{ comment.author.username }}</a>
-                    <span class="font-label-sm text-label-sm text-on-surface-variant">{{ comment.created_at.strftime("%d %B %Y, %I:%M %p") }}</span>
-                </div>
-                <p class="font-body-md text-body-md text-on-surface m-0">{{ comment.content }}</p>
-                {% if current_user.is_authenticated and comment.user_id == current_user.id %}
-                <form action="{{ url_for('posts.delete_comment', comment_id=comment.id) }}" method="POST" class="self-end">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-error-container hover:bg-error/20 text-error font-label-sm text-label-sm transition-colors">
-                        <span class="material-symbols-outlined text-[14px]">delete</span>
-                        Delete
-                    </button>
-                </form>
-                {% endif %}
-            </article>
-            {% endfor %}
         </div>
-        {% else %}
-        <p class="font-body-sm text-body-sm text-on-surface-variant">No comments yet.</p>
         {% endif %}
     </div>
 
-    <a href="{{ url_for('locations.home') }}" class="inline-flex items-center gap-2 mt-10 font-label-lg text-label-lg text-secondary hover:underline">
-        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-        Back to Home
-    </a>
+    <!-- ================= FEED & SIDEBAR ================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
 
+        <!-- ================= MAIN COLUMN ================= -->
+        <section class="lg:col-span-8 flex flex-col gap-space-lg">
+
+            <article class="p-6 sm:p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col gap-5">
+
+                <div class="flex items-center justify-between gap-3">
+                    <a href="{{ url_for('profiles.profile', username=post.author.username) }}" class="flex items-center gap-3 no-underline text-inherit min-w-0">
+                        {{ avatar(post.author, 'w-12 h-12') }}
+                        <div class="flex flex-col min-w-0">
+                            <span class="flex items-center gap-1.5 font-headline-md text-headline-sm text-primary font-bold truncate">
+                                {{ post.author.username }}
+                                {% if post.author.is_verified %}<span class="material-symbols-outlined text-secondary text-[16px]">verified</span>{% endif %}
+                            </span>
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">@{{ post.author.username }} · {{ time_ago(post.created_at) }}</span>
+                        </div>
+                    </a>
+                    {% if current_user.is_authenticated and current_user.id != post.author.id %}
+                    <form action="{{ url_for('profiles.follow_user', username=post.author.username) }}" method="POST" class="shrink-0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% if is_following_author %}
+                        <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
+                            Following
+                        </button>
+                        {% else %}
+                        <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">person_add</span>
+                            Follow
+                        </button>
+                        {% endif %}
+                    </form>
+                    {% endif %}
+                </div>
+
+                {% if post.media %}
+                <div class="flex flex-col gap-3">
+                    <div class="relative w-full h-80 sm:h-96 rounded-xl overflow-hidden bg-surface-container-high">
+                        {% set primary = post.media[0] %}
+                        {% if primary.media_type == "image" %}
+                        <img id="post_media_active_img" src="{{ media_url(primary.filename) }}" alt="Photo shared by {{ post.author.username }}" class="w-full h-full object-cover">
+                        <video id="post_media_active_video" controls class="w-full h-full object-cover hidden">
+                            <source id="post_media_active_source" type="">
+                        </video>
+                        {% else %}
+                        <img id="post_media_active_img" alt="Photo shared by {{ post.author.username }}" class="w-full h-full object-cover hidden">
+                        <video id="post_media_active_video" controls class="w-full h-full object-cover">
+                            <source id="post_media_active_source" src="{{ media_url(primary.filename) }}" type="video/{{ primary.filename.rsplit('.', 1)[1].lower() }}">
+                        </video>
+                        {% endif %}
+                        {% if post.media|length > 1 %}
+                        <span class="absolute top-3 right-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/70 backdrop-blur-md text-on-primary font-label-sm text-label-sm">
+                            <span class="material-symbols-outlined text-[16px]">photo_library</span>
+                            {{ post.media|length }} {{ "Photo" if post.media|length == 1 else "Media" }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if post.media|length > 1 %}
+                    <div class="grid grid-cols-4 gap-3">
+                        {% for media in post.media[:4] %}
+                        <button type="button" class="post-media-thumb relative h-20 rounded-lg overflow-hidden ring-2 {{ 'ring-secondary' if loop.first else 'ring-transparent' }} hover:ring-secondary transition-all" data-type="{{ media.media_type }}" data-src="{{ media_url(media.filename) }}" data-ext="{{ media.filename.rsplit('.', 1)[1].lower() if media.media_type == 'video' else '' }}">
+                            {% if media.media_type == "image" %}
+                            <img src="{{ media_url(media.filename) }}" alt="Thumbnail {{ loop.index }}" class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full bg-surface-container-high flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary text-[24px]">play_circle</span>
+                            </div>
+                            {% endif %}
+                            {% if loop.last and post.media|length > 4 %}
+                            <div class="absolute inset-0 bg-primary/70 flex items-center justify-center">
+                                <span class="font-label-md text-label-md text-on-primary font-bold">+{{ post.media|length - 4 }}</span>
+                            </div>
+                            {% endif %}
+                        </button>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <p class="font-body-lg text-body-lg text-on-surface leading-relaxed m-0 whitespace-pre-line">{{ post.content }}</p>
+
+                {% if post.location %}
+                <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container-low border-l-4 border-secondary w-fit">
+                    <span class="material-symbols-outlined text-secondary text-[18px]">place</span>
+                    <a href="{{ url_for('locations.location_page', location_id=post.location.id) }}" class="font-label-md text-label-md text-primary font-semibold no-underline hover:underline">{{ post.location.name }}{% if post.location.city %}, {{ post.location.city }}{% endif %} — {{ post.location.country }}</a>
+                </div>
+                {% endif %}
+
+                <div class="pt-4 border-t border-surface-container-high flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        {% if current_user.is_authenticated %}
+                        <button type="button" id="like_button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">{{ 'favorite' if is_liked else 'favorite_border' }}</span>
+                            <span id="like_count">{{ post.likes|length }}</span>
+                        </button>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container text-on-surface-variant font-label-md text-label-md">
+                            <span class="material-symbols-outlined text-[18px]">favorite_border</span>
+                            {{ post.likes|length }}
+                        </span>
+                        {% endif %}
+                        <a href="#comments" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md transition-colors no-underline">
+                            <span class="material-symbols-outlined text-[18px]">chat_bubble</span>
+                            {{ post.comments|length }}
+                        </a>
+                        <button type="button" id="share_button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">share</span>
+                            <span id="share_label">Share</span>
+                        </button>
+                    </div>
+
+                    {% if current_user.is_authenticated and post.user_id == current_user.id %}
+                    <div class="flex items-center gap-3">
+                        <a href="{{ url_for('posts.edit_post', post_id=post.id) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-label-sm transition-colors no-underline">
+                            <span class="material-symbols-outlined text-[16px]">edit</span>
+                            Edit
+                        </a>
+                        <form action="{{ url_for('posts.delete_post', post_id=post.id) }}" method="POST" onsubmit="return confirm('Delete this post? This cannot be undone.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-error-container hover:bg-error/20 text-error font-label-sm text-label-sm transition-colors">
+                                <span class="material-symbols-outlined text-[16px]">delete</span>
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+
+            <!-- ================= COMMENTS ================= -->
+            <div id="comments" class="flex flex-col gap-space-md scroll-mt-24">
+                <div class="flex items-center justify-between">
+                    <h2 class="font-headline-sm text-headline-sm text-primary font-bold m-0">Comments</h2>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant">{{ post.comments|length }}</span>
+                </div>
+
+                {% if current_user.is_authenticated %}
+                <form action="{{ url_for('posts.create_comment', post_id=post.id) }}" method="POST" class="flex flex-col gap-3 p-5 rounded-2xl bg-surface-container-lowest shadow-sm" novalidate>
+                    {{ form.hidden_tag() }}
+                    {{ form.content.label(class="font-label-md text-label-md text-on-surface-variant") }}
+                    {{ form.content(class="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary resize-y") }}
+                    {% if form.content.errors %}
+                        <span class="text-error font-body-sm text-body-sm">{{ form.content.errors[0] }}</span>
+                    {% endif %}
+                    {{ form.submit(class="self-end px-5 py-2.5 rounded-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md transition-colors") }}
+                </form>
+                {% else %}
+                <p class="font-body-sm text-body-sm text-on-surface-variant">Please <a href="{{ url_for('auth.login') }}" class="text-primary font-semibold hover:underline">log in</a> to comment.</p>
+                {% endif %}
+
+                {% if post.comments %}
+                <div class="flex flex-col gap-3">
+                    {% for comment in post.comments %}
+                    <article class="p-5 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-2">
+                        <div class="flex items-center justify-between gap-4">
+                            <a href="{{ url_for('profiles.profile', username=comment.author.username) }}" class="flex items-center gap-2.5 no-underline text-inherit min-w-0">
+                                {{ avatar(comment.author, 'w-8 h-8') }}
+                                <div class="flex flex-col min-w-0">
+                                    <span class="font-label-md text-label-md text-primary font-semibold truncate">{{ comment.author.username }}</span>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">{{ time_ago(comment.created_at) }}</span>
+                                </div>
+                            </a>
+                            {% if current_user.is_authenticated and comment.user_id == current_user.id %}
+                            <form action="{{ url_for('posts.delete_comment', comment_id=comment.id) }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-error-container hover:bg-error/20 text-error font-label-sm text-label-sm transition-colors shrink-0">
+                                    <span class="material-symbols-outlined text-[14px]">delete</span>
+                                    Delete
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        <p class="font-body-md text-body-md text-on-surface m-0 whitespace-pre-line">{{ comment.content }}</p>
+                    </article>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-8 rounded-2xl bg-surface-container-lowest shadow-sm flex flex-col items-center text-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[28px]">chat_bubble_outline</span>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant m-0">No comments yet. Be the first to respond.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <a href="{{ url_for('locations.location_page', location_id=post.location.id) if post.location else url_for('locations.home') }}" class="inline-flex items-center gap-2 mt-4 font-label-lg text-label-lg text-secondary hover:underline no-underline w-fit">
+                <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                Back to {{ post.location.name if post.location else 'Home' }}
+            </a>
+
+        </section>
+
+        <!-- ================= SIDEBAR ================= -->
+        {% if post.location %}
+        <aside class="lg:col-span-4 flex flex-col gap-space-lg lg:sticky lg:top-24">
+
+            <!-- Location overview -->
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg flex flex-col gap-space-md">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-headline-sm text-headline-sm text-primary m-0">Location Overview</h3>
+                    <span class="font-label-sm text-label-sm text-outline">{{ post.location.country }}</span>
+                </div>
+
+                <div class="w-full h-40 rounded-lg overflow-hidden bg-surface-container">
+                    <iframe class="w-full h-full border-0" loading="lazy" title="Map of {{ post.location.name }}" src="https://www.openstreetmap.org/export/embed.html?bbox={{ post.location.longitude - 0.02 }}%2C{{ post.location.latitude - 0.015 }}%2C{{ post.location.longitude + 0.02 }}%2C{{ post.location.latitude + 0.015 }}&amp;layer=mapnik&amp;marker={{ post.location.latitude }}%2C{{ post.location.longitude }}"></iframe>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="flex flex-col p-space-sm rounded-lg bg-surface-container-low">
+                        <span class="font-headline-sm text-headline-sm text-primary font-bold">{{ post_count }}</span>
+                        <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wide">Posts</span>
+                    </div>
+                    <div class="flex flex-col p-space-sm rounded-lg bg-surface-container-low">
+                        <span class="font-headline-sm text-headline-sm text-primary font-bold">{{ contributor_count }}</span>
+                        <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wide">Nomads</span>
+                    </div>
+                    <div class="flex flex-col p-space-sm rounded-lg bg-surface-container-low">
+                        <span class="font-headline-sm text-headline-sm text-primary font-bold">{{ location_follower_count }}</span>
+                        <span class="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wide">Following</span>
+                    </div>
+                </div>
+
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('locations.follow_location', location_id=post.location.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    {% if is_following_location %}
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-md text-label-md transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">bookmark_added</span>
+                        Following This Place
+                    </button>
+                    {% else %}
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">bookmark_add</span>
+                        Follow {{ post.location.name }}
+                    </button>
+                    {% endif %}
+                </form>
+                {% endif %}
+            </div>
+
+            <!-- Nomads here now -->
+            {% if recent_contributors %}
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg flex flex-col gap-space-md">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <h3 class="font-headline-sm text-headline-sm text-primary m-0">Nomads Here Too</h3>
+                </div>
+                <div class="flex flex-col gap-space-sm">
+                    {% for contributor in recent_contributors %}
+                    <div class="flex items-center justify-between gap-space-sm p-space-xs rounded-lg hover:bg-surface-container-low transition-colors">
+                        <a href="{{ url_for('profiles.profile', username=contributor.username) }}" class="flex items-center gap-space-sm no-underline text-inherit min-w-0">
+                            {{ avatar(contributor, 'w-9 h-9') }}
+                            <span class="font-label-md text-label-md text-primary font-bold truncate">@{{ contributor.username }}</span>
+                        </a>
+                        <a href="{{ url_for('profiles.profile', username=contributor.username) }}" class="px-3 py-1 rounded-full bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-label-sm transition-colors shrink-0 no-underline">Wave 👋</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- More from this location -->
+            {% if more_posts %}
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg flex flex-col gap-space-md">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-headline-sm text-headline-sm text-primary m-0">More From {{ post.location.name }}</h3>
+                    <a href="{{ url_for('locations.location_page', location_id=post.location.id) }}" class="font-label-sm text-label-sm text-secondary font-semibold no-underline hover:underline">See All</a>
+                </div>
+                <div class="flex flex-col gap-space-xs">
+                    {% for other_post in more_posts %}
+                    <a href="{{ url_for('posts.post_detail', post_id=other_post.id) }}" class="flex items-center gap-space-sm p-space-sm rounded-lg hover:bg-surface-container-low transition-colors no-underline text-inherit">
+                        {% if other_post.media and other_post.media[0].media_type == "image" %}
+                        <img src="{{ media_url(other_post.media[0].filename) }}" alt="" class="w-12 h-12 rounded-lg object-cover shrink-0">
+                        {% else %}
+                        <div class="w-12 h-12 rounded-lg bg-primary-container flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-on-primary-container text-[20px]">article</span>
+                        </div>
+                        {% endif %}
+                        <div class="flex flex-col min-w-0">
+                            <span class="font-label-md text-label-md text-on-surface truncate">{{ other_post.content|truncate(48) }}</span>
+                            <span class="font-label-sm text-[11px] text-on-surface-variant">@{{ other_post.author.username }} · {{ time_ago(other_post.created_at) }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </aside>
+        {% endif %}
+    </div>
 </div>
 
 {% endblock %}
@@ -159,15 +372,8 @@
                 likeCount.textContent = data.like_count;
 
                 const icon = likeButton.querySelector(".material-symbols-outlined");
-                const label = likeButton.querySelector("span:last-child");
 
-                if (data.liked) {
-                    icon.textContent = "favorite";
-                    label.textContent = "Unlike";
-                } else {
-                    icon.textContent = "favorite_border";
-                    label.textContent = "Like";
-                }
+                icon.textContent = data.liked ? "favorite" : "favorite_border";
 
             } catch (error) {
 
@@ -182,6 +388,84 @@
         });
 
     }
+
+    const shareButton = document.getElementById("share_button");
+    const shareLabel = document.getElementById("share_label");
+
+    if (shareButton) {
+
+        shareButton.addEventListener("click", async function () {
+
+            const shareData = {
+                title: "NomadNet",
+                text: "Check out this post on NomadNet",
+                url: window.location.href
+            };
+
+            try {
+
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                    return;
+                }
+
+                await navigator.clipboard.writeText(window.location.href);
+
+                const originalLabel = shareLabel.textContent;
+                shareLabel.textContent = "Link copied";
+
+                setTimeout(function () {
+                    shareLabel.textContent = originalLabel;
+                }, 2000);
+
+            } catch (error) {
+                // User cancelled the share dialog or clipboard access was denied; no action needed.
+            }
+
+        });
+
+    }
+
+    const mediaThumbs = document.querySelectorAll(".post-media-thumb");
+    const activeImg = document.getElementById("post_media_active_img");
+    const activeVideo = document.getElementById("post_media_active_video");
+    const activeSource = document.getElementById("post_media_active_source");
+
+    mediaThumbs.forEach(function (thumb) {
+
+        thumb.addEventListener("click", function () {
+
+            mediaThumbs.forEach(function (other) {
+                other.classList.remove("ring-secondary");
+                other.classList.add("ring-transparent");
+            });
+
+            thumb.classList.remove("ring-transparent");
+            thumb.classList.add("ring-secondary");
+
+            const type = thumb.dataset.type;
+            const src = thumb.dataset.src;
+
+            if (type === "image") {
+
+                activeImg.src = src;
+                activeImg.classList.remove("hidden");
+                activeVideo.classList.add("hidden");
+                activeVideo.pause();
+
+            } else {
+
+                activeSource.src = src;
+                activeSource.type = "video/" + thumb.dataset.ext;
+                activeVideo.load();
+                activeVideo.classList.remove("hidden");
+                activeImg.classList.add("hidden");
+
+            }
+
+        });
+
+    });
 
 </script>
 {% endblock %}
