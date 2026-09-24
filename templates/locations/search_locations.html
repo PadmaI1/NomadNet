@@ -1,39 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<meta name="csrf-token" content="{{ csrf_token() }}">
-<title>{% block title %}Search Locations — NomadNet{% endblock %}</title>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            pine: { DEFAULT: '#1b4332', dark: '#0f291e', light: '#2d6a4f', tint: '#40916c' },
-            sage: { 50: '#f4f7f4', 100: '#e7eee8', 200: '#cfe0d2', 400: '#74a87e', 600: '#487c53' },
-            tealOcean: { DEFAULT: '#0077b6', light: '#0096c7', dark: '#03045e' },
-            sand: { 50: '#fef8f3', 100: '#fdf2e9', 200: '#fae3ce', 300: '#f6cfa9' }
-          },
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            display: ['"Epilogue"', 'sans-serif']
-          },
-          borderRadius: { '3xl': '1.75rem', '4xl': '2.25rem', '5xl': '2.75rem' },
-          boxShadow: {
-            'soft': '0 20px 40px -15px rgba(27, 67, 50, 0.08)',
-            'float': '0 12px 30px -8px rgba(15, 41, 30, 0.16)',
-            'emerald-glow': '0 10px 25px -5px rgba(45, 106, 79, 0.35)'
-          }
-        }
-      }
-    }
-</script>
+{% extends "base.html" %}
+
+{% block title %}Search Locations — NomadNet{% endblock %}
+
+{% block extra_head %}
 <style>
     .topo-grid {
       background-color: #f3f8f4;
@@ -56,90 +25,34 @@
     }
     .hover-lift { transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
     .hover-lift:hover { transform: translateY(-4px) scale(1.05); }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .map-pin { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-    .map-pin.is-active .pin-badge { box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.55), 0 8px 16px -4px rgba(15, 41, 30, 0.35); transform: scale(1.15); }
+    .map-pin.is-active .pin-badge { box-shadow: 0 0 0 4px rgba(1, 45, 29, 0.35), 0 8px 16px -4px rgba(15, 41, 30, 0.35); transform: scale(1.15); }
     .map-pin.is-active .pin-shadow { opacity: 0.5; transform: scaleX(1.3); }
     .pin-badge { transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 6px 14px -4px rgba(15, 41, 30, 0.28); }
     .pin-shadow { transition: all 0.2s ease; }
 </style>
-</head>
-<body class="bg-gradient-to-br from-[#e4efe6] via-[#f5fbf7] to-[#e6f1ea] font-sans text-slate-800 min-h-screen p-3 lg:p-6 antialiased selection:bg-pine selection:text-white flex flex-col">
+{% endblock %}
 
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-<div class="w-full max-w-[1720px] mx-auto mb-3">
-    {% for message in messages %}
-    <div class="flex items-center gap-3 px-5 py-3 rounded-2xl bg-sage-100 border border-sage-200 text-pine font-medium text-sm">
-        <i class="fa-solid fa-circle-info"></i>
-        <p class="m-0">{{ message }}</p>
-    </div>
-    {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
-
-<!-- Top Bar -->
-<header class="w-full max-w-[1720px] mx-auto mb-4 bg-white/90 backdrop-blur-xl border border-white/60 rounded-3xl px-6 py-3.5 flex items-center justify-between shadow-soft z-40">
-<div class="flex items-center gap-8">
-<a class="flex items-center gap-2.5 group" href="{{ url_for('locations.home') }}">
-<div class="w-10 h-10 rounded-2xl bg-pine flex items-center justify-center text-white shadow-emerald-glow group-hover:bg-pine-light transition-colors">
-<i class="fa-solid fa-mountain-sun text-lg"></i>
-</div>
-<div>
-<span class="font-display font-extrabold text-xl tracking-tight text-pine block leading-tight">NomadNet</span>
-<span class="text-[10px] font-semibold uppercase tracking-wider text-pine/60">Location Explorer</span>
-</div>
-</a>
-<nav aria-label="Main Navigation" class="hidden md:flex items-center gap-1.5 bg-sage-100/70 p-1.5 rounded-full border border-sage-200/60">
-<a class="px-5 py-2 text-sm font-semibold rounded-full text-slate-600 hover:text-pine hover:bg-white/80 transition" href="{{ url_for('locations.home') }}">Explore</a>
-<a class="px-5 py-2 text-sm font-semibold rounded-full bg-pine text-white shadow-sm transition" href="{{ url_for('locations.search_locations') }}">Locations</a>
-</nav>
-</div>
-<div class="flex items-center gap-3">
-{% if current_user.is_authenticated %}
-<a href="{{ url_for('notifications.notification_list') }}" class="relative w-10 h-10 rounded-full flex items-center justify-center text-slate-500 hover:text-pine hover:bg-sage-100 transition" title="Notifications">
-<i class="fa-solid fa-bell text-lg"></i>
-{% if unread_count > 0 %}
-<span class="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-emerald-500 border-2 border-white text-white text-[9px] font-bold flex items-center justify-center leading-none">{{ unread_count if unread_count < 100 else '99+' }}</span>
-{% endif %}
-</a>
-<div class="flex items-center gap-2.5 pl-2 border-l border-slate-200">
-<a href="{{ url_for('profiles.profile', username=current_user.username) }}" class="relative cursor-pointer block">
-{% if current_user.avatar_url %}
-<img alt="{{ current_user.username }}" class="w-10 h-10 rounded-full object-cover ring-2 ring-pine/20 hover:ring-pine transition" src="{{ current_user.avatar_url }}"/>
-{% else %}
-<div class="w-10 h-10 rounded-full bg-pine/10 text-pine font-bold flex items-center justify-center ring-2 ring-pine/20 hover:ring-pine transition">{{ current_user.username[0]|upper }}</div>
-{% endif %}
-</a>
-</div>
-{% else %}
-<a href="{{ url_for('auth.login') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-pine text-white text-sm font-semibold rounded-full transition shadow-sm hover:bg-pine-light">Sign In</a>
-{% endif %}
-</div>
-</header>
-
-<!-- Main Explorer -->
-<main class="flex-1 w-full max-w-[1720px] mx-auto flex gap-4 h-[calc(100vh-125px)] min-h-[640px]">
+{% block content %}
+<div class="w-full max-w-[1440px] mx-auto px-margin-mobile lg:px-margin pt-space-lg pb-space-xxl flex flex-col gap-space-md">
 
 <!-- Dual-Panel Explorer -->
-<div class="flex-1 bg-white rounded-5xl border border-white/90 shadow-2xl p-3 lg:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden relative">
+<div class="bg-surface-container-lowest rounded-4xl border border-outline-variant shadow-xl p-3 lg:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden relative h-[calc(100vh-160px)] min-h-[600px]">
 
 <!-- Left: Map Canvas -->
-<section class="lg:col-span-6 xl:col-span-7 rounded-4xl topo-grid relative flex flex-col justify-between overflow-hidden border border-slate-200/70 shadow-inner">
+<section class="lg:col-span-6 xl:col-span-7 rounded-4xl topo-grid relative flex flex-col justify-between overflow-hidden border border-outline-variant shadow-inner">
 <div class="relative z-30 p-4 lg:p-6 pointer-events-auto">
 <form method="GET" action="{{ url_for('locations.search_locations') }}" class="relative max-w-xl mx-auto lg:mx-0">
-<div class="flex items-center bg-white/95 backdrop-blur-md rounded-2xl px-4 py-3 shadow-float border border-slate-200/80 gap-3 group focus-within:ring-2 focus-within:ring-pine/30 transition">
-<i class="fa-solid fa-magnifying-glass text-slate-400 text-base group-focus-within:text-pine"></i>
-<input id="location-search-input" aria-label="Search destination" name="q" class="w-full bg-transparent border-none text-slate-800 font-medium text-sm focus:ring-0 p-0 placeholder-slate-400" placeholder="Search a city, cafe, coworking spot..." type="text" value="{{ query }}"/>
+<div class="flex items-center bg-surface-container-lowest/95 backdrop-blur-md rounded-2xl px-4 py-3 shadow-md border border-outline-variant gap-3 group focus-within:ring-2 focus-within:ring-secondary transition">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px] group-focus-within:text-primary">search</span>
+<input id="location-search-input" aria-label="Search destination" name="q" class="w-full bg-transparent border-none font-body-md text-body-md text-on-surface focus:outline-none focus:ring-0 p-0 placeholder:text-on-surface-variant" placeholder="Search a city, cafe, coworking spot..." type="text" value="{{ query }}"/>
 {% if query %}
-<a href="{{ url_for('locations.search_locations') }}" class="text-slate-400 hover:text-slate-600 px-1" title="Clear search">
-<i class="fa-solid fa-xmark text-sm"></i>
+<a href="{{ url_for('locations.search_locations') }}" class="text-on-surface-variant hover:text-on-surface px-1" title="Clear search">
+<span class="material-symbols-outlined text-[18px]">close</span>
 </a>
 {% endif %}
-<button type="submit" class="w-8 h-8 rounded-xl bg-sage-100 hover:bg-sage-200 text-pine flex items-center justify-center transition" title="Search">
-<i class="fa-solid fa-arrow-right text-xs"></i>
+<button type="submit" class="w-8 h-8 rounded-xl bg-primary-fixed hover:bg-primary-fixed-dim text-primary flex items-center justify-center transition" title="Search">
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
 </button>
 </div>
 </form>
@@ -147,9 +60,9 @@
 
 <!-- Decorative terrain texture only (this is a stylized canvas, not a real interactive map) -->
 <div aria-hidden="true" class="absolute inset-0 pointer-events-none select-none overflow-hidden">
-<div class="terrain-blob w-72 h-72 bg-emerald-200/40 -top-16 -left-10"></div>
-<div class="terrain-blob w-96 h-96 bg-sage-200/50 top-1/3 -right-20"></div>
-<div class="terrain-blob w-64 h-64 bg-emerald-100/60 bottom-0 left-1/4"></div>
+<div class="terrain-blob w-72 h-72 bg-primary-fixed/40 -top-16 -left-10"></div>
+<div class="terrain-blob w-96 h-96 bg-primary-fixed-dim/40 top-1/3 -right-20"></div>
+<div class="terrain-blob w-64 h-64 bg-primary-fixed/50 bottom-0 left-1/4"></div>
 <div class="street-line w-[480px] h-2.5 top-[22%] -left-12 rotate-[26deg]"></div>
 <div class="street-line w-[620px] h-3 top-[48%] -left-20 -rotate-[16deg]"></div>
 <div class="street-line w-[520px] h-2.5 bottom-[18%] left-[8%] rotate-[10deg]"></div>
@@ -176,42 +89,42 @@
       onclick="selectMatch({{ loop.index0 }})"
       title="{{ match.name }}">
       <div class="relative">
-        <div class="pin-badge w-14 h-14 rounded-2xl bg-white/95 backdrop-blur-md border border-white flex items-center justify-center text-2xl">
+        <div class="pin-badge w-14 h-14 rounded-2xl bg-surface-container-lowest/95 backdrop-blur-md border border-outline-variant flex items-center justify-center text-2xl">
           <span>{{ match.emoji or '📍' }}</span>
         </div>
         {% if match.on_nomadnet and match.active_nomads > 0 %}
-        <span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-600 text-white font-bold text-[10px] flex items-center justify-center shadow-md border-2 border-white">{{ match.active_nomads }}</span>
+        <span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary text-on-primary font-bold text-[10px] flex items-center justify-center shadow-md border-2 border-surface-container-lowest">{{ match.active_nomads }}</span>
         {% elif not match.on_nomadnet %}
-        <span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-tealOcean text-white text-[10px] flex items-center justify-center shadow-md border-2 border-white">
-          <i class="fa-solid fa-plus text-[8px]"></i>
+        <span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-secondary text-on-secondary text-[10px] flex items-center justify-center shadow-md border-2 border-surface-container-lowest">
+          <span class="material-symbols-outlined text-[12px]">add</span>
         </span>
         {% endif %}
       </div>
-      <div class="pin-shadow w-8 h-2 bg-pine/20 rounded-full blur-[3px] mt-0.5 opacity-70"></div>
-      <span class="text-[10px] font-bold text-slate-700 bg-white/95 px-2 py-0.5 rounded-full shadow mt-1 whitespace-nowrap max-w-[100px] truncate">{{ match.name }}</span>
+      <div class="pin-shadow w-8 h-2 bg-primary/20 rounded-full blur-[3px] mt-0.5 opacity-70"></div>
+      <span class="font-label-sm text-label-sm text-on-surface bg-surface-container-lowest/95 px-2 py-0.5 rounded-full shadow mt-1 whitespace-nowrap max-w-[100px] truncate">{{ match.name }}</span>
     </button>
   {% endfor %}
 {% elif query %}
   <div class="absolute inset-0 flex items-center justify-center px-8 text-center">
-    <div class="bg-white/90 backdrop-blur-md rounded-3xl px-8 py-7 shadow-float border border-white flex flex-col items-center gap-3 max-w-xs">
-      <i class="fa-solid fa-map-location-dot text-3xl text-slate-300"></i>
-      <p class="text-slate-600 font-medium text-sm">No places matched "{{ query }}". Try a different search term.</p>
+    <div class="bg-surface-container-lowest/90 backdrop-blur-md rounded-3xl px-8 py-7 shadow-md border border-outline-variant flex flex-col items-center gap-3 max-w-xs">
+      <span class="material-symbols-outlined text-[32px] text-on-surface-variant">wrong_location</span>
+      <p class="font-body-sm text-body-sm text-on-surface-variant m-0">No places matched "{{ query }}". Try a different search term.</p>
     </div>
   </div>
 {% else %}
   <div class="absolute inset-0 flex items-center justify-center px-8 text-center">
-    <div class="bg-white/90 backdrop-blur-md rounded-3xl px-8 py-7 shadow-float border border-white flex flex-col items-center gap-3 max-w-xs">
-      <i class="fa-solid fa-compass text-3xl text-pine/40"></i>
-      <p class="text-slate-600 font-medium text-sm">Search a city, cafe, or coworking spot to see it here.</p>
+    <div class="bg-surface-container-lowest/90 backdrop-blur-md rounded-3xl px-8 py-7 shadow-md border border-outline-variant flex flex-col items-center gap-3 max-w-xs">
+      <span class="material-symbols-outlined text-[32px] text-primary/40">explore</span>
+      <p class="font-body-sm text-body-sm text-on-surface-variant m-0">Search a city, cafe, or coworking spot to see it here.</p>
     </div>
   </div>
 {% endif %}
 </div>
 
 <div class="relative z-30 p-4 lg:p-6 flex items-center justify-between pointer-events-auto">
-<div class="bg-white/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-200/70 shadow-sm flex items-center gap-2">
-<i class="fa-solid fa-location-dot text-pine text-xs"></i>
-<span id="match-position" class="text-xs font-bold text-pine">
+<div class="bg-surface-container-lowest/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-outline-variant shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[14px]">location_on</span>
+<span id="match-position" class="font-label-sm text-label-sm text-primary">
 {% if all_matches %}Result 1 of {{ all_matches|length }}{% elif query %}No results{% else %}Start searching{% endif %}
 </span>
 </div>
@@ -219,59 +132,59 @@
 </section>
 
 <!-- Right: Destination Card -->
-<section class="lg:col-span-6 xl:col-span-5 rounded-4xl relative overflow-hidden flex flex-col justify-between p-6 group select-none shadow-xl bg-gradient-to-br from-pine-dark to-pine">
+<section class="lg:col-span-6 xl:col-span-5 rounded-4xl relative overflow-hidden flex flex-col justify-between p-6 group select-none shadow-xl bg-gradient-to-br from-primary to-primary-container">
 {% if top_location %}
 <div class="absolute inset-0 z-0" id="active-hero-wrap">
-<div id="active-hero-img" class="w-full h-full bg-cover bg-center bg-pine-dark transition-all duration-500" style="{% if top_location.hero_image %}background-image:url('{{ top_location.hero_image }}');{% endif %}"></div>
+<div id="active-hero-img" class="w-full h-full bg-cover bg-center bg-primary transition-all duration-500" style="{% if top_location.hero_image %}background-image:url('{{ top_location.hero_image }}');{% endif %}"></div>
 <div id="active-hero-emoji" class="absolute bottom-3 right-3 w-12 h-12 rounded-2xl bg-black/30 backdrop-blur-md flex items-center justify-center text-2xl" style="display:{{ 'none' if top_location.hero_image else 'flex' }};">{{ top_location.emoji or '📍' }}</div>
 <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/35 pointer-events-none"></div>
 </div>
 
 <div class="relative z-20 flex items-center justify-between w-full gap-2">
-<div class="flex items-center gap-2 bg-pine/70 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-white shadow-float min-w-0">
-<i class="fa-solid fa-location-dot text-emerald-400 text-xs shrink-0"></i>
-<span id="active-country" class="font-display font-bold text-sm tracking-wide truncate">{{ top_location.country or "—" }}</span>
+<div class="flex items-center gap-2 bg-primary/70 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/20 text-on-primary shadow-md min-w-0">
+<span class="material-symbols-outlined text-primary-fixed text-[14px] shrink-0">location_on</span>
+<span id="active-country" class="font-headline-sm text-label-lg tracking-wide truncate">{{ top_location.country or "—" }}</span>
 {% if top_location.city %}
 <span class="text-white/40">/</span>
-<span id="active-city" class="text-xs text-white/90 font-medium truncate">{{ top_location.city }}</span>
+<span id="active-city" class="font-label-sm text-label-sm text-white/90 truncate">{{ top_location.city }}</span>
 {% endif %}
 </div>
 <div id="active-rating-badge" class="shrink-0">
 {% if top_location.on_nomadnet and top_location.post_count > 0 %}
-<div class="flex items-center gap-1.5 bg-tealOcean/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-2xl border border-white/20 shadow-float">
-<i class="fa-solid fa-star text-amber-300 text-xs"></i>
-<span class="font-bold text-sm">{{ top_location.rating }}</span>
-<span class="text-[10px] text-white/75 font-medium">({{ top_location.post_count }} posts)</span>
+<div class="flex items-center gap-1.5 bg-secondary/90 backdrop-blur-md text-on-secondary px-3.5 py-1.5 rounded-2xl border border-white/20 shadow-md">
+<span class="material-symbols-outlined text-[14px]">star</span>
+<span class="font-label-md text-label-md">{{ top_location.rating }}</span>
+<span class="font-label-sm text-label-sm text-white/75">({{ top_location.post_count }} posts)</span>
 </div>
 {% elif top_location.on_nomadnet %}
-<div class="bg-white/80 backdrop-blur-md text-slate-700 px-3.5 py-1.5 rounded-2xl border border-white/40 text-xs font-medium">No posts yet</div>
+<div class="bg-white/80 backdrop-blur-md text-on-surface px-3.5 py-1.5 rounded-2xl border border-white/40 font-label-sm text-label-sm">No posts yet</div>
 {% endif %}
 </div>
 </div>
 
 <!-- Anonymized aggregate community signal — no individual identities or live presence -->
 <div class="relative z-20">
-<div id="active-community-badge" class="inline-flex items-center gap-1.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-full px-3.5 py-1.5 text-white text-xs font-medium" style="display:{{ 'flex' if (top_location.on_nomadnet and top_location.active_nomads > 0) else 'none' }};">
-<i class="fa-solid fa-users text-emerald-300"></i>
+<div id="active-community-badge" class="inline-flex items-center gap-1.5 bg-black/40 backdrop-blur-md border border-white/20 rounded-full px-3.5 py-1.5 text-white font-label-sm text-label-sm" style="display:{{ 'flex' if (top_location.on_nomadnet and top_location.active_nomads > 0) else 'none' }};">
+<span class="material-symbols-outlined text-primary-fixed text-[14px]">group</span>
 <span>{{ top_location.active_nomads }} nomad{{ '' if top_location.active_nomads == 1 else 's' }} posted this month</span>
 </div>
 </div>
 
 <div class="relative z-20 space-y-3">
-<div class="bg-white/95 backdrop-blur-xl rounded-3xl p-4 shadow-2xl border border-white">
+<div class="bg-surface-container-lowest/95 backdrop-blur-xl rounded-3xl p-4 shadow-2xl border border-outline-variant">
 <div class="flex items-center gap-2 mb-1">
-<span id="active-type-badge" class="px-2 py-0.5 rounded-full bg-sage-100 text-pine text-[10px] font-bold uppercase tracking-wider">{{ (top_location.type or 'place')|replace('_',' ') }}</span>
+<span id="active-type-badge" class="px-2 py-0.5 rounded-full bg-primary-fixed text-primary font-label-sm text-label-sm uppercase tracking-wider">{{ (top_location.type or 'place')|replace('_',' ') }}</span>
 </div>
-<h3 id="active-name" class="font-display font-bold text-slate-800 text-lg mt-0.5">{{ top_location.name or "Unnamed place" }}</h3>
-<p id="active-description" class="text-xs text-slate-500 mt-0.5">{% if top_location.description and top_location.description|lower != (top_location.name or '')|lower %}{{ top_location.description }}{% else %}{{ [top_location.city, top_location.country] | select | join(', ') }}{% endif %}</p>
+<h3 id="active-name" class="font-headline-sm text-headline-sm text-on-surface mt-0.5">{{ top_location.name or "Unnamed place" }}</h3>
+<p id="active-description" class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{% if top_location.description and top_location.description|lower != (top_location.name or '')|lower %}{{ top_location.description }}{% else %}{{ [top_location.city, top_location.country] | select | join(', ') }}{% endif %}</p>
 </div>
 
 <div class="flex items-center gap-2.5 pt-1">
 <div id="active-cta" class="flex-1">
 {% if top_location.on_nomadnet %}
-<a href="{{ url_for('locations.location_page', location_id=top_location.id) }}" class="w-full bg-pine hover:bg-pine-light text-white font-semibold py-3 px-4 rounded-2xl shadow-emerald-glow transition flex items-center justify-center gap-2 text-sm">
+<a href="{{ url_for('locations.location_page', location_id=top_location.id) }}" class="w-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md py-3 px-4 rounded-2xl shadow-md transition flex items-center justify-center gap-2">
 <span>View {{ top_location.name }}</span>
-<i class="fa-solid fa-arrow-right text-xs"></i>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
 </a>
 {% else %}
 <form method="POST" action="{{ url_for('locations.create_location') }}">
@@ -284,9 +197,9 @@
 <input type="hidden" name="longitude" value="{{ top_location.longitude }}">
 <input type="hidden" name="provider" value="{{ top_location.provider }}">
 <input type="hidden" name="provider_id" value="{{ top_location.provider_id }}">
-<button type="submit" class="w-full bg-pine hover:bg-pine-light text-white font-semibold py-3 px-4 rounded-2xl shadow-emerald-glow transition flex items-center justify-center gap-2 text-sm">
+<button type="submit" class="w-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md py-3 px-4 rounded-2xl shadow-md transition flex items-center justify-center gap-2">
 <span>View {{ top_location.name }}</span>
-<i class="fa-solid fa-arrow-right text-xs"></i>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
 </button>
 </form>
 {% endif %}
@@ -295,14 +208,16 @@
 </div>
 {% else %}
 <div class="relative z-20 h-full flex flex-col items-center justify-center text-center text-white/90 gap-3">
-<i class="fa-solid fa-compass text-5xl"></i>
-<p class="font-medium text-sm max-w-xs">{{ "No places matched your search." if query else "Search for a place to preview it here." }}</p>
+<span class="material-symbols-outlined text-[56px]">explore</span>
+<p class="font-body-sm text-body-sm max-w-xs m-0">{{ "No places matched your search." if query else "Search for a place to preview it here." }}</p>
 </div>
 {% endif %}
 </section>
 </div>
-</main>
+</div>
+{% endblock %}
 
+{% block scripts %}
 <script>
 const MATCHES = {{ all_matches | tojson }};
 const CREATE_LOCATION_URL = "{{ url_for('locations.create_location') }}";
@@ -344,18 +259,19 @@ function renderCard(i) {
   if (m.on_nomadnet) {
     const pill = document.createElement('div');
     if (m.post_count > 0) {
-      pill.className = 'flex items-center gap-1.5 bg-tealOcean/90 backdrop-blur-md text-white px-3.5 py-1.5 rounded-2xl border border-white/20 shadow-float';
-      const icon = document.createElement('i');
-      icon.className = 'fa-solid fa-star text-amber-300 text-xs';
+      pill.className = 'flex items-center gap-1.5 bg-secondary/90 backdrop-blur-md text-on-secondary px-3.5 py-1.5 rounded-2xl border border-white/20 shadow-md';
+      const icon = document.createElement('span');
+      icon.className = 'material-symbols-outlined text-[14px]';
+      icon.textContent = 'star';
       const ratingSpan = document.createElement('span');
-      ratingSpan.className = 'font-bold text-sm';
+      ratingSpan.className = 'font-label-md text-label-md';
       ratingSpan.textContent = m.rating;
       const countSpan = document.createElement('span');
-      countSpan.className = 'text-[10px] text-white/75 font-medium';
+      countSpan.className = 'font-label-sm text-label-sm text-white/75';
       countSpan.textContent = '(' + m.post_count + ' posts)';
       pill.append(icon, ratingSpan, countSpan);
     } else {
-      pill.className = 'bg-white/80 backdrop-blur-md text-slate-700 px-3.5 py-1.5 rounded-2xl border border-white/40 text-xs font-medium';
+      pill.className = 'bg-white/80 backdrop-blur-md text-on-surface px-3.5 py-1.5 rounded-2xl border border-white/40 font-label-sm text-label-sm';
       pill.textContent = 'No posts yet';
     }
     ratingBadge.appendChild(pill);
@@ -378,11 +294,12 @@ function renderCard(i) {
   if (m.on_nomadnet) {
     const a = document.createElement('a');
     a.href = '/location/' + encodeURIComponent(m.id);
-    a.className = 'w-full bg-pine hover:bg-pine-light text-white font-semibold py-3 px-4 rounded-2xl shadow-emerald-glow transition flex items-center justify-center gap-2 text-sm';
+    a.className = 'w-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md py-3 px-4 rounded-2xl shadow-md transition flex items-center justify-center gap-2';
     const span = document.createElement('span');
     span.textContent = 'View ' + (m.name || 'location');
-    const icon = document.createElement('i');
-    icon.className = 'fa-solid fa-arrow-right text-xs';
+    const icon = document.createElement('span');
+    icon.className = 'material-symbols-outlined text-[16px]';
+    icon.textContent = 'arrow_forward';
     a.append(span, icon);
     cta.appendChild(a);
   } else {
@@ -403,11 +320,12 @@ function renderCard(i) {
     });
     const button = document.createElement('button');
     button.type = 'submit';
-    button.className = 'w-full bg-pine hover:bg-pine-light text-white font-semibold py-3 px-4 rounded-2xl shadow-emerald-glow transition flex items-center justify-center gap-2 text-sm';
+    button.className = 'w-full bg-secondary hover:bg-tertiary-container text-on-secondary font-label-md text-label-md py-3 px-4 rounded-2xl shadow-md transition flex items-center justify-center gap-2';
     const span = document.createElement('span');
     span.textContent = 'View ' + (m.name || 'location');
-    const icon = document.createElement('i');
-    icon.className = 'fa-solid fa-arrow-right text-xs';
+    const icon = document.createElement('span');
+    icon.className = 'material-symbols-outlined text-[16px]';
+    icon.textContent = 'arrow_forward';
     button.append(span, icon);
     form.appendChild(button);
     cta.appendChild(form);
@@ -434,5 +352,4 @@ if (MATCHES.length) {
   });
 }
 </script>
-</body>
-</html>
+{% endblock %}

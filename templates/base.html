@@ -89,11 +89,15 @@
         </div>
         <nav class="hidden lg:flex items-center gap-1 p-1 bg-surface-container-low rounded-full">
             <a aria-current="page" class="px-4 py-2 transition-colors bg-primary-container text-on-primary font-semibold rounded-full" href="{{ url_for('locations.home') }}">Home</a>
+            <a class="px-4 py-2 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors" href="{{ url_for('locations.search_locations') }}">Search</a>
             {% if current_user.is_authenticated %}
             <a class="px-4 py-2 rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors" href="{{ url_for('profiles.profile', username=current_user.username) }}">Profile</a>
             {% endif %}
         </nav>
         <div class="flex items-center gap-space-sm sm:gap-space-md">
+            <button type="button" id="mobile-nav-toggle" class="lg:hidden p-2.5 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Menu" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-nav-menu">
+                <span class="material-symbols-outlined text-xl leading-none">menu</span>
+            </button>
             {% if current_user.is_authenticated %}
             <a class="relative p-2.5 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" href="{{ url_for('notifications.notification_list') }}" title="Notifications" aria-label="Notifications">
                 <span class="material-symbols-outlined text-xl leading-none">notifications</span>
@@ -119,6 +123,13 @@
             <a href="{{ url_for('auth.signup') }}" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-secondary text-on-secondary font-label-lg text-label-lg transition-all hover:bg-tertiary-container">Join</a>
             {% endif %}
         </div>
+    </div>
+    <div id="mobile-nav-menu" class="hidden lg:hidden border-t border-outline-variant bg-surface px-margin-mobile py-space-sm flex flex-col">
+        <a class="px-3 py-2.5 rounded-lg font-label-lg text-label-lg text-on-surface hover:bg-surface-container transition-colors" href="{{ url_for('locations.home') }}">Home</a>
+        <a class="px-3 py-2.5 rounded-lg font-label-lg text-label-lg text-on-surface hover:bg-surface-container transition-colors" href="{{ url_for('locations.search_locations') }}">Search Locations</a>
+        {% if current_user.is_authenticated %}
+        <a class="px-3 py-2.5 rounded-lg font-label-lg text-label-lg text-on-surface hover:bg-surface-container transition-colors" href="{{ url_for('profiles.profile', username=current_user.username) }}">Profile</a>
+        {% endif %}
     </div>
 </header>
 
@@ -174,6 +185,20 @@
         </div>
     </div>
 </footer>
+
+<script>
+    (function () {
+        var toggle = document.getElementById('mobile-nav-toggle');
+        var menu = document.getElementById('mobile-nav-menu');
+        if (toggle && menu) {
+            toggle.addEventListener('click', function () {
+                var isOpen = !menu.classList.contains('hidden');
+                menu.classList.toggle('hidden');
+                toggle.setAttribute('aria-expanded', String(!isOpen));
+            });
+        }
+    })();
+</script>
 
 {% block scripts %}{% endblock %}
 
