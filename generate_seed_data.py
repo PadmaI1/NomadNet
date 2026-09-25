@@ -166,13 +166,13 @@ def build():
     lines.append("-- ============================================================================")
     lines.append("-- USERS")
     lines.append("-- ============================================================================")
-    lines.append("INSERT INTO user (id, username, email, password, created_at, avatar_url, bio, is_verified) VALUES")
+    lines.append("INSERT INTO \"user\" (id, username, email, password, created_at, avatar_url, bio, is_verified) VALUES")
     user_rows = []
     for i, (uname, email, bio, verified) in enumerate(USERS, start=1):
         created = days_ago(random.randint(10, 400))
         user_rows.append(
             f"({i}, '{esc(uname)}', '{esc(email)}', '{PASSWORD_HASH}', '{created}', "
-            f"'{avatar(i - 1)}', '{esc(bio)}', {1 if verified else 0})"
+            f"'{avatar(i - 1)}', '{esc(bio)}', {'TRUE' if verified else 'FALSE'})"
         )
     lines.append(",\n".join(user_rows) + ";")
     lines.append("")
@@ -196,7 +196,7 @@ def build():
     )
     loc_rows = []
     for i, (name, ltype, emoji, country, city, lat, lon, pidx, desc) in enumerate(LOCATIONS, start=1):
-        verified = 1 if i % 2 == 0 else 0
+        verified = "TRUE" if i % 2 == 0 else "FALSE"
         loc_rows.append(
             f"({i}, '{esc(name)}', '{ltype}', '{esc(country)}', '{esc(city)}', {lat}, {lon}, "
             f"'openstreetmap', '{100000 + i}', '{photo(pidx, 1200)}', '{esc(desc)}', 0.0, '{emoji}', {verified})"
@@ -256,7 +256,7 @@ def build():
             created = days_ago(random.randint(0, 27))
             like_rows.append(f"({like_id}, {uid}, {pid}, '{created}')")
             like_id += 1
-    lines.append("INSERT INTO like (id, user_id, post_id, created_at) VALUES")
+    lines.append("INSERT INTO \"like\" (id, user_id, post_id, created_at) VALUES")
     lines.append(",\n".join(like_rows) + ";")
     lines.append("")
 
