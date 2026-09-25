@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, abort, request, flash, redirect, u
 from flask_login import login_required, current_user
 from requests import post
 
+from sqlalchemy.orm import selectinload, joinedload
+
 from models import PostMedia, db, Post, Comment, Like, Location, LocationFollow, Follow, Notification
 from forms import CreatePostForm, EditPostForm, CreateCommentForm
 from utils.location_enricher import enrich_location
@@ -318,7 +320,9 @@ def post_detail(post_id):
     This route instantiates CreateCommentForm so the template
     can render the comment form with proper CSRF protection.
     """
-    post = Post.query.get(post_id)
+    post = Post.query.options(
+        selectinload(Post.comments).joinedload(Comment.author)
+    ).get(post_id)
 
     if post is None:
         abort(404)

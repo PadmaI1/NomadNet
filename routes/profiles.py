@@ -3,6 +3,7 @@ from datetime import datetime
 
 from flask import Blueprint, render_template, abort, request, flash, redirect, url_for
 from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload, selectinload
 
 from models import db, User, Post, Follow, Location, Notification
 
@@ -20,7 +21,12 @@ def profile(username):
     if user is None:
         abort(404)
 
-    posts = Post.query.filter_by(
+    posts = Post.query.options(
+        joinedload(Post.location),
+        selectinload(Post.media),
+        selectinload(Post.likes),
+        selectinload(Post.comments)
+    ).filter_by(
         user_id=user.id
     ).order_by(
         Post.created_at.desc()
@@ -43,7 +49,13 @@ def profile(username):
 
     current_base = posts[0].location if posts and posts[0].location else None
 
-    nomad_circle = [follow.follower for follow in user.followers][:5]
+    nomad_circle = (
+        User.query
+        .join(Follow, Follow.follower_id == User.id)
+        .filter(Follow.followed_id == user.id)
+        .limit(5)
+        .all()
+    )
 
     is_following = False
 

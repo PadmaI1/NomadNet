@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, abort, request, flash, redirect, url_for
 from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload, selectinload
 import requests
 import math
-from models import db, Country, Follow, Post, Location, LocationFollow, Like, Comment, User
+from models import db, Country, Follow, Post, Location, LocationFollow, Like, Comment, User, PostMedia
 from forms import CreatePostForm
 from datetime import datetime, timedelta
 from utils.location_enricher import (
@@ -249,6 +250,12 @@ def home():
         if followed_location_ids or followed_user_ids:
             personalized_posts = (
                 Post.query
+                .options(
+                    joinedload(Post.author),
+                    selectinload(Post.media),
+                    selectinload(Post.likes),
+                    selectinload(Post.comments)
+                )
                 .filter(
                     db.or_(
                         Post.location_id.in_(followed_location_ids),
@@ -262,11 +269,16 @@ def home():
 
     personalized_post_ids = {post.id for post in personalized_posts}
 
+    candidate_query = Post.query.options(
+        joinedload(Post.author),
+        selectinload(Post.media),
+        selectinload(Post.likes),
+        selectinload(Post.comments)
+    )
     candidate_posts = (
-        Post.query
-        .filter(~Post.id.in_(personalized_post_ids))
+        candidate_query.filter(~Post.id.in_(personalized_post_ids))
         if personalized_post_ids
-        else Post.query
+        else candidate_query
     ).order_by(Post.created_at.desc()).limit(100).all()
 
     discovery_posts = sorted(
@@ -312,7 +324,12 @@ def location_page(location_id):
         if existing_follow:
             is_following = True
 
-    posts = Post.query.filter_by(
+    posts = Post.query.options(
+        joinedload(Post.author),
+        selectinload(Post.media),
+        selectinload(Post.likes),
+        selectinload(Post.comments)
+    ).filter_by(
         location_id=location.id
     ).order_by(
         Post.created_at.desc()
@@ -325,21 +342,35 @@ def location_page(location_id):
 
     contributor_count = len(contributor_ids)
 
-    media_count = sum(len(post.media) for post in posts)
+    media_count = (
+        db.session.query(db.func.count(PostMedia.id))
+        .join(Post, PostMedia.post_id == Post.id)
+        .filter(Post.location_id == location.id)
+        .scalar()
+    ) or 0
 
     follower_count = LocationFollow.query.filter_by(
         location_id=location.id
     ).count()
 
-    recent_contributors = []
+    recent_contributor_ids = []
     seen_contributor_ids = set()
 
     for post in posts:
         if post.user_id not in seen_contributor_ids:
             seen_contributor_ids.add(post.user_id)
-            recent_contributors.append(post.author)
-        if len(recent_contributors) >= 5:
+            recent_contributor_ids.append(post.user_id)
+        if len(recent_contributor_ids) >= 5:
             break
+
+    contributors_by_id = {
+        contributor.id: contributor
+        for contributor in User.query.filter(User.id.in_(recent_contributor_ids)).all()
+    }
+    recent_contributors = [
+        contributors_by_id[contributor_id]
+        for contributor_id in recent_contributor_ids
+    ]
 
     other_locations = Location.query.filter(
         Location.id != location.id
@@ -444,15 +475,15 @@ def search_locations():
     all_matches = [
         {
             "kind": "saved",
-            "id": location.id,
-            "name": location.name,
-            "type": location.type,
-            "country": location.country,
-            "city": location.city,
+            "id": enriched["location"].id,
+            "name": enriched["location"].name,
+            "type": enriched["location"].type,
+            "country": enriched["location"].country,
+            "city": enriched["location"].city,
             "on_nomadnet": True,
-            **enrich_location(location)
+            **{k: v for k, v in enriched.items() if k != "location"}
         }
-        for location in locations
+        for enriched in enrich_locations(locations)
     ] + [
         {
             **item,
