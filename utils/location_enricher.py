@@ -166,14 +166,77 @@ def enrich_location(location) -> dict:
     }
 
 
-def enrich_locations(locations) -> list:
-    """Enrich multiple locations with computed fields."""
+def enrich_locations(locations, days=30) -> list:
+    """Enrich multiple locations with computed fields.
+
+    Runs a handful of batched, grouped-by-location queries instead of
+    calling enrich_location() in a loop, which would run several queries
+    PER location (an N+1 query pattern that gets slow fast as the number
+    of locations and network latency grow)."""
+    if not locations:
+        return []
+
+    location_ids = [location.id for location in locations]
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+    total_post_counts = dict(
+        db.session.query(Post.location_id, db.func.count(Post.id))
+        .filter(Post.location_id.in_(location_ids))
+        .group_by(Post.location_id)
+        .all()
+    )
+
+    recent_post_counts = dict(
+        db.session.query(Post.location_id, db.func.count(Post.id))
+        .filter(Post.location_id.in_(location_ids), Post.created_at >= cutoff)
+        .group_by(Post.location_id)
+        .all()
+    )
+
+    recent_like_counts = dict(
+        db.session.query(Post.location_id, db.func.count(Like.id))
+        .join(Like, Like.post_id == Post.id)
+        .filter(Post.location_id.in_(location_ids), Post.created_at >= cutoff)
+        .group_by(Post.location_id)
+        .all()
+    )
+
+    recent_comment_counts = dict(
+        db.session.query(Post.location_id, db.func.count(Comment.id))
+        .join(Comment, Comment.post_id == Post.id)
+        .filter(Post.location_id.in_(location_ids), Post.created_at >= cutoff)
+        .group_by(Post.location_id)
+        .all()
+    )
+
+    active_nomad_counts = dict(
+        db.session.query(Post.location_id, db.func.count(db.distinct(Post.user_id)))
+        .filter(Post.location_id.in_(location_ids), Post.created_at >= cutoff)
+        .group_by(Post.location_id)
+        .all()
+    )
+
     enriched = []
+
     for location in locations:
-        enriched_data = {
+        recent_posts = recent_post_counts.get(location.id, 0)
+
+        if recent_posts:
+            likes = recent_like_counts.get(location.id, 0)
+            comments = recent_comment_counts.get(location.id, 0)
+            engagement_score = (likes + comments * 2) / recent_posts
+            rating = round(min(engagement_score / 2, 5.0), 2)
+        else:
+            rating = 0.0
+
+        enriched.append({
             "location": location,
-            **enrich_location(location)
-        }
-        enriched.append(enriched_data)
+            "emoji": get_location_emoji(location.type),
+            "rating": rating,
+            "active_nomads": active_nomad_counts.get(location.id, 0),
+            "post_count": total_post_counts.get(location.id, 0),
+            "hero_image": get_hero_image(location) or get_fallback_image(location.type),
+            "description": generate_location_description(location),
+        })
 
     return enriched
