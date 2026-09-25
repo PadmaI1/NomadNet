@@ -20,7 +20,11 @@ app = Flask(__name__)
 load_dotenv()
 
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///nomadnet.db"
+
+database_url = os.getenv("DATABASE_URL", "sqlite:///nomadnet.db")
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 
 app.config["UPLOAD_FOLDER"] = os.path.join(
     app.root_path,
